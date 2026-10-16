@@ -23,7 +23,7 @@ Windows PowerShell 可使用 `npm.cmd` / `npx.cmd`。开发服务仅监听 `127.
 回放区域可聚焦；左右方向键前后浏览，Home/End 到起始/末尾。每个棋盘点提供
 SGF 坐标与黑/白/空的可访问名称（aa 左上，ss 右下，先列后行）。
 
-## 本地 KataGo（任务09，待主代理验收）
+## 本地 KataGo（任务09，已完成本机验收）
 
 `npm run dev` 使用单个 Node HTTP 服务（默认 `127.0.0.1:5173`）挂载 Vite；
 `npm run dev -- --port 5174` 可换端口。服务端更改须重启 dev，浏览器模块支持同源热更新。
@@ -72,8 +72,10 @@ npm.cmd run dev
   不是完整中国/日本裁判规则，也不声称野狐完整认证。完整有序历史用于实际棋规与所有候选/PV验证。
 - 固定 BLACK 视角，正目差为黑领先。预算100 visits、cfg maxTime2秒，分析线程1/搜索线程2、batch2/cache18、analysisPVLen=15（不含首着，PV数组最多16着）、无ownership。
 - 资源平台检查：`node tests/fixture-resource-check.mjs timeout`（亦支持 `exit` / `disconnect` / `nofork` / `spawn-error`）。嵌套 Playwright 启动失败是预期；以外层命令的退出码和 PID/临时目录检查判定。独立配置不进入正常浏览器套件。
-- Windows 的真实 EPIPE 浏览器场景暂因 stdin 句柄关闭未能触发管道错误而跳过；致命 stderr、不合作进程3秒收尾及关闭期间等待有独立覆盖，但不能替代 EPIPE 验证。
-  实际 visits 照实显示，可能略超100。启动600秒与就绪查询30秒独立，不能将首次调优耗时当查询耗时。
+- Windows 真实 EPIPE 浏览器回归已通过，无跳过；包含旧进程退出后再重试、回收中关闭及迟缓版本查询进程关闭。
+  临时原生测试引擎使用本机既有 .NET Framework 4 的 csc.exe / System.Web.Extensions.dll，编译产物随测试删除；缺少工具会报错，不自动安装。普通应用运行不依赖这些测试编译工具。
+- 外层检查自身超时的独立验证：`node tests/fixture-deadline-check.mjs`。真实断管的平台探针：`node tests/windows-input-probe.mjs`；平台探针不替代浏览器回归。
+- 实际 visits 照实显示，可能略超100。启动600秒与就绪查询30秒独立，不能将首次调优耗时当查询耗时。
 - 候选不等于全部合法手或最强证明，PV 是假设而非必然结局，估值不是棋理原因。
   显示前10项，同时显示总数与未展示数；缺PV不补齐。未知循环只标不支持，不冒充非法着证明。
 - 64KiB 流式输入、最多2000帧、最多362候选、单条响应2MiB；任何坏候选/PV整次拒绝。
@@ -84,7 +86,7 @@ npm.cmd run dev
 ### 验证边界
 
 `npm test` 保留原58条语义回归，新增测试通过真实浏览器/HTTP/规则/序列化，只将外部进程换成
-`tests/scripted-engine.mjs`。每测试独立进程/随机端口；页面标“可控测试引擎”，不是真实接入证据。
+Node 脚本或 Windows 临时原生测试进程。每测试独立进程/随机端口；成功的受控分析标“可控测试引擎”，不是真实接入证据。
 测试进程入口 `GO_COACH_TEST_ENGINE` 仅由本机测试启动环境选择，不能由网页注入。
 
 真实浏览器验收为独立手动命令（先 build）：
@@ -98,6 +100,8 @@ node tests/real-engine-browser.mjs
 请用全新证据目录。只运行内置合成输入，不读取用户棋谱；完整日志/截图留本机，不进 Git。
 [09实施记录](.scratch/go-coach/09-implementation-log.md) 与
 [真实网页记录](.scratch/go-coach/09-browser-acceptance.md) 区分受控回归、真实运行、失败尝试及局限。
+最终状态见[主代理验收](.scratch/go-coach/09-main-acceptance.md)：92条浏览器回归全过，另有14次真实网页分析。
+仅确认本机Windows/指定引擎与模型；低预算重复分析的首候选可能变化，不代表最强手证明或教学效果。
 
 ## 单局面教学（任务02）
 
@@ -120,7 +124,7 @@ B的预设排序不证明 rs 更强或 ab 更简单；不展示编造的胜率/�
 [02独立核验说明](tests/fixtures/guided-positions.md)，实际验证见
 [02实施记录](.scratch/go-coach/02-implementation-log.md)。
 
-## 少量教学精选（任务04，待独立验收）
+## 少量教学精选（任务04，已验收预设示例流程）
 
 上传后即显示分析等待，核验证据后提供0–3个精选，逐个进入同一套教学与变化流程。
 1–3个、约10–15分钟只是目标，不保证、不凑数。原谱回放始终保留。

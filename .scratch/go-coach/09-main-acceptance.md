@@ -1,4 +1,4 @@
-# 09：主代理独立验收记录（仍在进行）
+# 09：主代理独立验收记录（本机范围已完成）
 
 ## 42c5205 候选
 
@@ -30,3 +30,29 @@
 **Standards**：原fixture启动finally已修复，无额外启发式建议；另确认P2：`fixture-resource-check.mjs`自身45秒超时先reject，record尚未赋值，finally不能回收其fixture资源，反而删除记录目录。已交实现者修复并注入外层deadline验证。
 
 主代理确认机器已存在.NET Framework csc.exe及System.Web.Extensions.dll，允许仅用既有工具制作临时外部测试引擎，直接关闭自己的Windows输入句柄，补查Node注入失败的EPIPE场景；不得安装运行库或触及其他进程。待这些问题修复复审、整合后再独立回归，09仍未验收完成。
+
+## 最终代码 7d611e101de612e0e2d033b9179bb4b399787800
+
+主代理完成候选整合后的独立验证，原问题与本机EPIPE证据缺口已闭合；仅据本节结论将09设为done，保留上节历史失败/待办事实。
+
+- `npm.cmd run typecheck`、`npm.cmd run build`、`git diff --check`：通过；工作区干净。
+- `npm.cmd test`：**92通过、0失败、0跳过**，约2.1分钟。旧58条语义回归与34条引擎浏览器测试全部执行，包含真实Windows断管重试、回收中关闭及迟缓version进程关闭。
+- `node tests/windows-input-probe.mjs`：主代理实际得到 `EPIPE / write EPIPE`，PID41824当时仍活；随后等待退出并移除临时目录/编译exe。另查PID已不存在。只使用本机既有.NET Framework编译器，没有安装依赖。该平台探针与浏览器回归分别报告。
+- `node tests/fixture-deadline-check.mjs`：独立观察器确认故障时fixture活着；外层退出0，outerAlive/fixtureAlive/fixtureDir/recordDir全部false。
+- 原五种fixture故障检查在新代码再次运行，外层均退出0且alive/tempExists均false；实测PID45032/39312/51584已消失，nofork/spawn-error无PID。内层预期启动失败不冒充普通套件成功。
+- `node tests/real-engine-browser.mjs`：新代码上 **14次真实KataGo浏览器分析全部完成**。新证据根 `D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl/web/main-acceptance-7d611e1/`，未覆盖任何旧目录。server36788/engine44220退出0，remaining=[]，另行PID检查均不存在。
+- `browser/main-wire-check.json`：主代理再次独立核对14条HTTP→GTP完整输入、所有规则profile字段/HA补偿/预算、唯一请求ID及最终响应步数/行棋方，以及页面BLACK根估值/visits与原始值一致。没有把仅显示“分析完成”当作全部验证。
+
+### 最终真实观测与局限
+
+引擎ready 2.233秒，原局首次2.923秒（含启动）、重复0.130秒；白轮分支首次0.865秒、重复0.123秒，其余0.084–0.901秒；仍使用已有调优缓存，不是首次冷启动或整盘性能保证。
+
+原局黑胜率67.477495%→67.379206%，目差1.922141→1.904701，首候选 **D4→Q16发生变化**。白轮分支黑胜率60.803124%→60.848165%，目差1.186055→1.193734，首候选保持Q16。小预算的候选/排序/PV可能波动，不能据两次结果认证稳定最强或据数值解释棋理。此次真实PV最长8着，16/17长度界限仍由独立合法受控序列验证。
+
+**Spec终审**：无新增确认实现缺陷或范围扩大；version所有权与关闭时序、代次检查、外部adapter seam符合设计。配置读取晚返回仅静态核查、非Windows未跑均已披露。
+
+**Standards终审**：无新增确认文档违反，无额外启发式建议；version及外层deadline原问题在代码层闭合，操作员exe选择保持无shell、HTTP不可控及可控引擎标注。主代理随后执行的测试补足本机动态证据。
+
+未实等600秒启动超时；未动态注入readFile晚返回；未验证其他OS/硬件。3秒不合作进程回收和真实30秒查询期限已有浏览器覆盖。没有在线AI、棋谱外发、费用、额外引擎/模型/运行库安装或push。普通operator.local.json未启用完整请求/响应日志；合成验收配置不能用于私人棋谱日志收集。
+
+09完成的是本机真实原局/分支分析，不代表真实教学精选、自然语言讲解、练习、跨盘记录、野狐认证或真人学习效果已完成。
