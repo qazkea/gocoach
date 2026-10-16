@@ -16,7 +16,7 @@ function points(value: unknown, expected: string[]): boolean {
 // The exact original game match binds setup, turns, full original history and rules.
 export async function analyzeVariation(game: Replay, example: Example, current: Variation): Promise<VariationAnalysis> {
  const matched = matchExample(game);
- if (!matched || matched.id !== example.id || matched.step !== example.step || current.origin !== example.step) throw Error("局面身份不符");
+ if (!matched || matched.id !== example.id || !Number.isInteger(example.step) || example.step < 0 || example.step + 1 >= game.frames.length || (example.id === "corner-a" && matched.step !== example.step) || current.origin !== example.step) throw Error("局面身份不符");
  const sequence = current.replay.frames.slice(current.origin + 1, current.cursor + 1).map(f => f.move);
  const id = sequences[sequence.join(",")];
  if (example.id !== "corner-a" || !id) return {kind:"missing"};

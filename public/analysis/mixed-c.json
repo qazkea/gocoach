@@ -1,0 +1,168 @@
+{
+  "context": {
+    "source": "mixed-c",
+    "rules": "Chinese",
+    "komi": 7.5,
+    "handicap": 0,
+    "initialPlayer": "W",
+    "black": [
+      "ba",
+      "gh",
+      "gj",
+      "lm",
+      "nm",
+      "ml",
+      "qs",
+      "rr",
+      "sq"
+    ],
+    "white": [
+      "aa",
+      "mm",
+      "ss"
+    ],
+    "moves": [
+      "W ab",
+      "B gi",
+      "W dd",
+      "B mn",
+      "W ee",
+      "B rs",
+      "W ff",
+      "B sr",
+      "W pp"
+    ]
+  },
+  "candidates": [
+    {
+      "id": "force",
+      "step": 5,
+      "player": "B",
+      "kind": "force",
+      "teaching": "rs",
+      "engine": "rs",
+      "evidence": [
+        {
+          "move": "rs",
+          "targets": [
+            {
+              "stones": [
+                "ss"
+              ],
+              "liberties": [
+                "rs",
+                "sr"
+              ]
+            }
+          ],
+          "captured": [
+            "ss"
+          ],
+          "third": "sr"
+        }
+      ]
+    },
+    {
+      "id": "connect",
+      "step": 1,
+      "player": "B",
+      "kind": "connect",
+      "teaching": "gi",
+      "engine": "gi",
+      "evidence": [
+        {
+          "move": "gi",
+          "targets": [
+            {
+              "stones": [
+                "gh"
+              ],
+              "liberties": [
+                "fh",
+                "hh",
+                "gg",
+                "gi"
+              ]
+            },
+            {
+              "stones": [
+                "gj"
+              ],
+              "liberties": [
+                "fj",
+                "hj",
+                "gi",
+                "gk"
+              ]
+            }
+          ],
+          "captured": [],
+          "afterLiberties": [
+            "fh",
+            "hh",
+            "gg",
+            "fi",
+            "hi",
+            "fj",
+            "hj",
+            "gk"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "capture",
+      "step": 3,
+      "player": "B",
+      "kind": "capture",
+      "teaching": "mn",
+      "engine": "mn",
+      "evidence": [
+        {
+          "move": "mn",
+          "targets": [
+            {
+              "stones": [
+                "mm"
+              ],
+              "liberties": [
+                "mn"
+              ]
+            }
+          ],
+          "captured": [
+            "mm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rescue",
+      "step": 0,
+      "player": "W",
+      "kind": "rescue",
+      "teaching": "ab",
+      "engine": "ab",
+      "evidence": [
+        {
+          "move": "ab",
+          "targets": [
+            {
+              "stones": [
+                "aa"
+              ],
+              "liberties": [
+                "ab"
+              ]
+            }
+          ],
+          "captured": [],
+          "afterLiberties": [
+            "bb",
+            "ac"
+          ]
+        }
+      ]
+    }
+  ]
+}

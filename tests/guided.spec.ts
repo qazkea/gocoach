@@ -105,9 +105,10 @@ test('缺失或冲突的分析证据不呈现答案', async ({page}) => {
   {...valid,evidence:[{move:'ab',target:'aa',liberties:['ab'],captured:[]}]}, null,
  ]) {
   await page.route('**/analysis/corner-a.json', route => route.fulfill({json:data}));
-  await enter(page);
-  await expect(lesson(page)).toContainText('证据不足');
-  await expect(lesson(page).getByRole('button',{name:'直接看答案'})).toHaveCount(0);
+  // Selection now validates on upload, before any lesson is offered.
+  await page.goto('/'); await upload(page);
+  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('证据不足');
+  await expect(page.getByRole('button',{name:'直接看答案'})).toHaveCount(0);
   await page.unroute('**/analysis/corner-a.json');
  }
 });
