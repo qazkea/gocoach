@@ -1,2 +1,9 @@
 # Local Pi tooling configuration and resources
 /.pi/
+/node_modules/
+/dist/
+/test-results/
+/playwright-report/
+/.env*
+/private-data/
+*.local
