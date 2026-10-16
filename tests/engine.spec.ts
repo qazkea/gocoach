@@ -63,16 +63,28 @@ for(const scenario of ['invalidPV','invalidMove','invalidNumber','wrongTurn','wr
   await expect(panel(page).getByRole('button',{name:'dd 空',exact:true})).toBeVisible();
  });
 });
-test.describe('uncooperative shutdown',()=>{
- test.use({engineScenario:'uncooperative'});
+for(const scenario of ['broken-input','uncooperative'])test.describe(scenario+' shutdown',()=>{
+ test.use({engineScenario:scenario});
  test('服务退出等待正在进行的旧进程回收',async({page,engineServer})=>{
   await open(page,engineServer.url);
   await expect(panel(page)).toContainText('noResults');
   await panel(page).getByRole('button',{name:'重新分析当前局面'}).click();
-  await expect(panel(page)).toContainText('warning/error');
+  await expect(panel(page)).toContainText(scenario==='broken-input'?'引擎输入已关闭':'warning/error');
   const old=(await engineServer.observed()).find(q=>q.action==='held-open').pid;
   expect(()=>process.kill(old,0)).not.toThrow();
   // Fixture now closes the server during its 3s grace period and checks every owned PID.
+ });
+});
+test.describe('slow-version',()=>{
+ test.use({engineScenario:'slow-version'});
+ test('浏览器启动的迟缓版本进程也由服务退出等待回收',async({page,engineServer})=>{
+  await open(page,engineServer.url,'(;FF[4]RU[Chinese]KM[7.5])');
+  await expect(panel(page)).toContainText('引擎加载中');
+  await expect.poll(async()=>(await engineServer.observed()).some(q=>q.action==='version-held-open')).toBe(true);
+  const version=(await engineServer.observed()).find(q=>q.action==='version-held-open').pid;
+  expect(await engineServer.pids()).toEqual([version]);
+  expect(()=>process.kill(version,0)).not.toThrow();
+  // Fixture requests server shutdown while version is still alive, and checks its PID.
  });
 });
 test.describe('pv16',()=>{
@@ -122,8 +134,7 @@ test.describe('loading',()=>{
 for(const scenario of ['broken-input','uncooperative'])test.describe(scenario,()=>{
  test.use({engineScenario:scenario});
  test(scenario==='broken-input'?'真实输入管道失败后先回收旧PID再重试新代次':'致命stderr后不合作进程必须先被回收再启动新代次',async({page,engineServer})=>{
-  test.skip(scenario==='broken-input'&&process.platform==='win32','Windows stdin closure attempts did not produce EPIPE; not equivalent to exit.');
-  await open(page,engineServer.url);
+  await open(page,engineServer.url,'(;FF[4]RU[Chinese]KM[7.5])');
   await expect(panel(page)).toContainText('noResults');
   const old=(await engineServer.observed()).find(q=>q.action==='held-open').pid;
   expect(()=>process.kill(old,0)).not.toThrow();
@@ -134,11 +145,15 @@ for(const scenario of ['broken-input','uncooperative'])test.describe(scenario,()
   await panel(page).getByRole('button',{name:'重新分析当前局面'}).click();
   // A live, uncooperative old process must not be replaced immediately.
   await page.waitForTimeout(500);
-  expect(await engineServer.pids()).toEqual([old]);
   expect(()=>process.kill(old,0)).not.toThrow();
+  expect(await engineServer.pids()).toEqual([old]);
   await expect(panel(page)).not.toContainText('分析完成');
   await expect(panel(page)).toContainText('分析完成',{timeout:7000});
-  expect(await engineServer.pids()).toHaveLength(2);
+  const generations=await engineServer.pids();
+  expect(generations).toHaveLength(2);
+  expect(generations[0]).toBe(old);
+  expect(generations[1]).not.toBe(old);
+  expect(()=>process.kill(generations[1],0)).not.toThrow();
   expect(Date.now()-start).toBeGreaterThan(2000);
   expect(()=>process.kill(old,0)).toThrow();
  });

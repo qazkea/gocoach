@@ -1,4 +1,4 @@
-import {spawn, execFile, type ChildProcessWithoutNullStreams} from 'node:child_process';
+import {spawn, execFile, type ChildProcess} from 'node:child_process';
 import {promisify} from 'node:util';
 import {mkdir, writeFile, readFile} from 'node:fs/promises';
 import {resolve, basename} from 'node:path';
@@ -7,7 +7,7 @@ import {result, type Position} from './position';
 import type {EngineResult} from '../src/engine';
 type Pending={position:Position; resolve:(r:EngineResult)=>void; reject:(e:Error)=>void; cancelled:boolean; sent:boolean; timer?:NodeJS.Timeout; status:(s:string)=>void};
 export class KataGo {
- private child?:ChildProcessWithoutNullStreams;
+ private child?:ChildProcess;
  private pending=new Map<string,Pending>();
  private acknowledgements=new Map<string,{target:string;timer:NodeJS.Timeout}>();
  private ready=false;
@@ -47,7 +47,7 @@ export class KataGo {
   this.acknowledgements.set(id,{target,timer});
   this.send({id,action:'terminate',terminateId:target});
  }
- private send(value:unknown) {this.child?.stdin.write(JSON.stringify(value)+'\n');}
+ private send(value:unknown) {this.child?.stdin?.write(JSON.stringify(value)+'\n');}
  private submit(id:string,p:Pending) {
   if(p.cancelled) return;
   p.sent=true; p.status('分析中（查询上限30秒）');
@@ -64,13 +64,25 @@ export class KataGo {
   try {
    let executable:string, args:string[];
    if(process.env.GO_COACH_TEST_ENGINE) {
-    executable=process.execPath; args=[resolve(process.env.GO_COACH_TEST_ENGINE)];
+    const adapter=resolve(process.env.GO_COACH_TEST_ENGINE);
+    if(/\.exe$/i.test(adapter)) {executable=adapter;args=[];}
+    else if(/\.(?:mjs|cjs|js)$/i.test(adapter)) {executable=process.execPath;args=[adapter];}
+    else throw Error('测试引擎仅支持本地 Node 脚本或 exe');
     this.engine='可控测试引擎（非真实 KataGo）';this.model='scripted-jsonl';
    } else {
     if(!process.env.GO_COACH_CONFIG) throw Error('未配置本地引擎：请由操作员设置 GO_COACH_CONFIG');
     const c=JSON.parse(await readFile(process.env.GO_COACH_CONFIG,'utf8')) as {executable:string;model:string;dataDir:string;homeDataDir:string;recordSyntheticEvidence?:boolean};
     for(const key of ['executable','model','dataDir','homeDataDir'] as const) if(typeof c[key]!=='string' || /[\r\n]/.test(c[key])) throw Error('本地引擎配置无效');
-    const version=await promisify(execFile)(c.executable,['version'],{timeout:10000,maxBuffer:65536,windowsHide:true});
+    if(generation!==this.generation || this.closing) return;
+    const checking=promisify(execFile)(c.executable,['version'],{timeout:10000,maxBuffer:65536,windowsHide:true});
+    // Version and analysis never overlap: both occupy the same owned child slot.
+    const versionChild=checking.child;this.child=versionChild;
+    let version;
+    try {version=await checking;}
+    finally {
+     if(this.child===versionChild && (!versionChild.pid || versionChild.exitCode!==null || versionChild.signalCode!==null)) this.child=undefined;
+    }
+    if(generation!==this.generation || this.closing) return;
     if(!version.stdout.includes('KataGo v1.18.1') || !version.stdout.includes('Using OpenCL backend')) throw Error('仅支持已授权 KataGo v1.18.1 OpenCL');
     this.engine='KataGo v1.18.1 OpenCL';this.model=basename(c.model);
     await mkdir(c.dataDir,{recursive:true});
@@ -160,7 +172,7 @@ export class KataGo {
     reject(Error('自有引擎未能在关闭期限内退出'));
    },6000);
    child.once('exit',finish);
-   try {child.stdin.end();} catch {}
+   try {child.stdin?.end();} catch {}
   });
   this.stopping=stopped.then(()=>{
    if(this.child===child)this.child=undefined;

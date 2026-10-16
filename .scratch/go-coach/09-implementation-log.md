@@ -82,3 +82,36 @@
 - 已授权真实 KataGo：使用新的 `web/review-fix/implementer.local.json` 和 `implementer-data`，原 probe/acceptance-4 不覆盖。两次 `node tests/real-engine-browser.mjs` 各14次真实浏览器分析通过；最终证据 `D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl/web/review-fix/implementer-browser-final`。最终原局首次2.932秒、重复0.178秒；分支首次0.884秒、重复0.130秒，其余10次0.128–0.908秒。小样本不作性能保证。
 - 最终 `exit.json`：server50148、engine39296，code0、success:true、remaining:[]；首次复跑server10584/engine31404也已退出。旧故障尝试及正常套件均由自己的 fixture 收尾，只处理本次生成/记录的PID。最后一次组合 PowerShell 命令因随后 `Get-Process` 查已不存在的旧PID返回1，真实浏览器本身的 exit.json 明确成功；不把该查询退出码冒充引擎失败。
 - **未完成**：本机真实 EPIPE 的浏览器端复现与修复前后证据，及主代理独立双轴复审/整合复测。未自标 done。未安装引擎、模型、驱动或运行库，未外发、付费或发布。
+
+## Windows 真实 stdin EPIPE 回归补齐
+
+- 分支 `implement/09-windows-epipe`，隔离 worktree `C:/Users/789/AppData/Local/Temp/pi-agent-a277a77a-c34a-4ca-4323881d`，基线 `42c5205`；最终两次 `git merge integration/go-coach` 均 Already up to date。未重做生命周期修复、未改任务状态。
+- 新外部 adapter `tests/windows-broken-input.cs` 使用现有 .NET Framework 4 编译器及 `System.Web.Extensions.dll`，每次编译到 fixture 的独立 tempdir；不提交 exe、不安装或下载依赖。仅 P/Invoke 获取/读取/关闭自己 `STD_INPUT_HANDLE=-10`。首代读合成 JSONL 后关闭真实输入句柄、记录 held-open、返回 noResults，并无限等待；第二代经同一 JSONL 出口返回空盘合法 D16/pass 候选。没有 stderr fatal、crash、伪造 error 事件或其他进程句柄操作。
+- 操作员 `GO_COACH_TEST_ENGINE` 仅允许 Node `.js/.mjs/.cjs` 脚本或本地 `.exe`，仍为 spawn 参数数组、shell:false；HTTP 无法选择路径。生产配置/版本/同源/CSRF 未变。非 Windows 保留原 Node adapter，本次没有跨平台运行证据。
+
+### 平台 CLI 与实际浏览器 RED → GREEN
+
+1. 先运行 `node tests/windows-input-probe.mjs`：真实 `code:EPIPE, message:"write EPIPE", pid:42812, alive:true`；收尾等待 child exit，删除 tempdir。此时尚未修改产品测试启动选择。最终复跑相同命令：PID 476，同样 `EPIPE / write EPIPE / alive:true`，收尾通过。CLI 仅验证外部注入，不代替浏览器。
+2. 临时将 `server/katago.ts` 生命周期恢复 `a25226c`，保留新 adapter/fixture 和操作员 exe 选择；`git diff a25226c -- server/katago.ts` 实际确认唯一差异为测试启动选择。构建旧服务后运行真实浏览器测试：上传合成空盘→noResults→重试→“引擎输入已关闭”→立即重试，500ms 旧 PID 52364 仍活（该断言通过），但 PID 列表已经 `[52364,47372]`，应仅 `[52364]` 的断言失败。首次同样 RED 是 `[48976,43548]`。不是超时/编译/依赖故障冒充产品 RED。
+3. 恢复 `42c5205` 生命周期（最终 diff 仅测试启动选择）并重新构建；同浏览器回归 GREEN。500ms 旧 PID 活且仅旧代次；至少等待2秒以上才完成，旧 PID 已退出，第二 PID 不同且仍活，页面显示分析完成。新增 broken-input shutdown 场景，在断管回收期关闭服务，fixture 核对全部自有 PID 退出。Windows 不再 skip。
+4. fixture 的失败收尾同样检查并等待自有 PID 消失，必要时只杀它记录的自有 PID，再报告原资源泄漏。两次 RED 后分别查询上述四个 PID 均不存在；没有遗留旧引擎。所有 fixture tempdir 均走 finally 删除，编译 exe 同时移除。
+
+### 最终验证与限制
+
+- 复用本机已安装 node_modules 的副本，没有新增安装。首次默认 Playwright 入口因其他会话占用5173而未执行测试；未停止其他会话，改用临时 `playwright.engine.local.ts`：`defineConfig({testDir:'./tests',fullyParallel:true,reporter:'list'})`，不用全局 webServer，每条 engine fixture 仍启动真实独立 HTTP 服务/随机端口。临时 config 验证后删除。
+- `node node_modules/@playwright/test/cli.js test tests/engine.spec.ts --config=playwright.engine.local.ts --workers=1 --grep 真实输入管道`：上述产品 RED；恢复后定向 GREEN。
+- 首次 typecheck 因新 mjs 缺声明失败；添加 `windows-input-probe.d.mts` 后最终 `npm.cmd run typecheck`、`npm.cmd run build` 均通过。
+- 最终 `node tests/windows-input-probe.mjs` 通过；`node node_modules/@playwright/test/cli.js test tests/engine.spec.ts --config=playwright.engine.local.ts --workers=4`：**33通过 / 0失败 / 0跳过**，43.5秒，含真实30秒期限、断管重试、断管中服务关闭、原 stderr/crash 独立场景。
+- `git diff --check` 通过。仅引擎相关浏览器套件；未重复全站旧58条或14次真实 GPU 查询（由主代理独立执行），未代替独立复审。此处解决前段日志记载的 Windows EPIPE 注入阻塞；不据此关闭09票。
+
+### 接续主代理追加的两项收尾修复
+
+主代理在本次工作期间授权纳入独立复审的两项 P2，沿同一外部进程/平台 I/O seam；以下为追加验证，最终结果取本节。
+
+- `server/katago.ts`：配置 readFile await 后、execFile(version) 前复核 generation/closing；version child 与 analysis child 串行占用同一自有 child 槽，close/fail 使用已有共享有界回收，等待真实 exit；版本查询结束后也复核代次，不能继续启动 analysis。没有放宽生产版本校验或改已有3秒/6秒回收期限。
+- `slow-version` 浏览器测试经真实页面触发生产 `GO_COACH_CONFIG` 路径，只把配置指向本次 tempdir 编译的外部 exe；它接到 `version` 参数后记录 PID 并保持活着，不输出假的 KataGo 版本。初始仅检查 PID 的测试在原实现下首跑通过，因为本机 Windows 的子进程联动退出掩盖了 fixture 对 server 的4秒强杀。加上服务必须无 SIGKILL 正常退出的断言后，原实现实际 RED：`Received: "SIGKILL"`；不是把首次通过当 RED。纳入 version 所有权后同例 GREEN（3.9秒），fixture 检查 version PID 消失且 server 正常退出。配置 readFile 的晚恢复竞态没有用 mock/readFile 内部 seam 强行注入，修复后的代次检查由源码审查核验。
+- `tests/fixture-resource-check.mjs`：child/recordFile 在 finally 可达，异常/超时后独立重读记录；先有界等待自己启动的外层子进程退出，再回收记录的自有 fixture PID 与目录，最后删除记录目录。spawn 无 PID 的 error 也完成等待；如果 OS 拒绝回收，报错并保留记录目录，不提前丢失回收入口。
+- 新 `tests/fixture-deadline-check.mjs` 是外层独立观察器。先确认记录已写且 fixture PID 活着，再让被测脚本在该状态下缩短 deadline；独立检查 outer/fixture 两个 PID 和 fixture/record 两层目录。旧逻辑实际 RED：`code:1,outerAlive:false,fixtureAlive:false,fixtureDir:true,recordDir:false`，观察器 finally 删除本次残留目录。修复后同命令 GREEN：`code:0,outerAlive:false,fixtureAlive:false,fixtureDir:false,recordDir:false`；无全局进程扫描或 kill。
+- `node tests/fixture-resource-check.mjs <mode>` 的 timeout / exit / disconnect / nofork / spawn-error 五种均外层退出0，`alive:false,tempExists:false`。内层每次1条 Playwright 故意失败是注入事实，不冒充正常套件通过。记录 PID 45668/51444/49068 均消失，nofork/spawn-error 为 pid:null。
+- 追加修复后再次 merge integration（当时 Already up to date），随后主代理提交验收文档 `4d76776`；提交前已实际 fast-forward merge 到该最新基线（仅新增主代理验收记录），并在 merge 后再次验证。`npm.cmd run typecheck`、`npm.cmd run build` 通过；CLI EPIPE 复跑 PID40760 仍活时报 `write EPIPE`，随后 exit/目录清理通过；deadline 独立观察器复跑通过。
+- 最终引擎浏览器命令同上：**34通过 / 0失败 / 0跳过**，44.9秒。包含断管重试、断管关闭、迟缓 version 关闭及既有引擎回归。diffcheck 曾提示日志末尾空行，整理后再次通过。未追加真实 GPU 运行或全站旧58条；待主代理定向复审和整合复测。

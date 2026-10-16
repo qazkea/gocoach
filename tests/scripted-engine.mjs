@@ -2,6 +2,10 @@ import readline from 'node:readline';
 import {appendFileSync,existsSync,writeFileSync,closeSync} from 'node:fs';
 const scenario=process.env.ENGINE_SCENARIO;
 if(process.env.ENGINE_OBSERVE)appendFileSync(process.env.ENGINE_OBSERVE+'.pids',process.pid+'\n');
+if(scenario==='slow-version'&&process.argv[2]==='version') {
+ appendFileSync(process.env.ENGINE_OBSERVE,JSON.stringify({action:'version-held-open',pid:process.pid})+'\n');
+ await new Promise(()=>setInterval(()=>{},1000)); // Deliberately never claims a valid KataGo version.
+}
 const send=v=>process.stdout.write(JSON.stringify(v)+'\n');
 const timers=new Set();
 const later=(fn,ms)=>{const t=setTimeout(()=>{timers.delete(t);fn();},ms);timers.add(t);};
@@ -16,8 +20,8 @@ readline.createInterface({input:process.stdin}).on('line',line=>{
  const number=++count;
  if((scenario==='broken-input'||scenario==='uncooperative')&&!existsSync(process.env.ENGINE_OBSERVE+'.broken')) {
   writeFileSync(process.env.ENGINE_OBSERVE+'.broken','1');
-  // Attempted real descriptor closure. Windows still did not yield EPIPE in
-  // this environment; that browser scenario is explicitly skipped there.
+  // POSIX adapter; Windows uses windows-broken-input.cs to close the actual
+  // inherited handle without Node retaining another read endpoint.
   if(scenario==='broken-input'){process.stdin._handle.close();closeSync(0);}
   setInterval(()=>{},1000); // Deliberately survive EOF; only our owner may reap us.
   appendFileSync(process.env.ENGINE_OBSERVE,JSON.stringify({action:'held-open',pid:process.pid})+'\n');
