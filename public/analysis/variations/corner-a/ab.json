@@ -1,0 +1,18 @@
+{
+  "context": {
+    "example": "corner-a",
+    "origin": 2,
+    "rules": "Chinese",
+    "komi": 7.5,
+    "sequence": [
+      "B ab"
+    ]
+  },
+  "evidence": {
+    "kind": "capture",
+    "move": "ab",
+    "captured": [
+      "aa"
+    ]
+  }
+}

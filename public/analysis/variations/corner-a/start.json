@@ -1,0 +1,19 @@
+{
+  "context": {
+    "example": "corner-a",
+    "origin": 2,
+    "rules": "Chinese",
+    "komi": 7.5,
+    "sequence": []
+  },
+  "evidence": {
+    "kind": "chain",
+    "color": "W",
+    "stones": [
+      "aa"
+    ],
+    "liberties": [
+      "ab"
+    ]
+  }
+}
