@@ -1,6 +1,7 @@
+import {GoBoard} from "./GoBoard";
 import {useEffect,useState} from 'react';
 import type {Replay} from './replay';
-import {engineInput,gtp,sgfPoint,type EngineResult} from './engine';
+import {engineInput,gtp,type EngineResult} from './engine';
 import {startVariation,extendVariation,seekVariation,type Variation} from './variation';
 export function EngineEntry({game,step}:{game:Replay;step:number}) {
  const [open,setOpen]=useState(false);
@@ -62,6 +63,6 @@ function EnginePanel({game,step,onClose}:{game:Replay;step:number;onClose:()=>vo
    <p>候选 {result.candidates.length} 项；显示前 {Math.min(10,result.candidates.length)} 项；未展示 {Math.max(0,result.candidates.length-10)} 项。</p>
    <ol>{result.candidates.slice(0,10).map((c,i)=><li key={i}>候选 {coordinate(c.move)}；visits {c.visits}；黑方胜率 {(c.winrate*100).toFixed(2)}%；黑方目差 {c.scoreLead.toFixed(2)}；PV：{c.pv?.length?c.pv.map(coordinate).join(' → '):'缺少 PV，不补齐'}</li>)}</ol>
   </div>}
-  <div className="board" aria-label="引擎变化棋盘">{frame.board.map((s,i)=>{const p=sgfPoint(i);return <button key={i} className={'point '+(s??'')} aria-label={p+' '+(s==='B'?'黑':s==='W'?'白':'空')} onClick={()=>play(p)}>{s?'●':'+'}</button>;})}</div>
+  <GoBoard frame={frame} label="引擎变化棋盘" onPlay={play} />
  </section>;
 }

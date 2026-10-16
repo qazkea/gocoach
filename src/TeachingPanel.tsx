@@ -1,3 +1,4 @@
+import {GoBoard} from "./GoBoard";
 import {useEffect, useState} from "react";
 import {VariationPanel} from "./VariationPanel";
 import {matchExample, analyze, attempt, evidenceText, goalText, hintText, targetPoints, libertyPoints, type Lesson, type Selection} from "./teaching";
@@ -84,11 +85,6 @@ function Teaching({game, analysis}: {game: Replay; analysis: Lesson}) {
    <button onClick={() => {setTrial(undefined); setFeedback(""); setAnswer(false); setMode("initial"); setSelected("");}}>重新试下</button>
    {hint && <p>原局面提示：{hintText(analysis)}标记：红框目标，蓝框气。</p>}
    <p aria-live="polite">{feedback}</p>
-   <div className="board" aria-label="教学试下棋盘">
-    {frame.board.map((stone, i) => {
-     const point = String.fromCharCode(97 + i % 19) + String.fromCharCode(97 + Math.floor(i / 19));
-     return <button key={i} title={point} data-coordinate={point} data-mark={answer && analysis.evidence.some(e => e.move === selected && e.targets.some(t => t.stones.includes(point))) ? "目标" : answer && point === selected ? "推荐" : hint && !trial ? (targetPoints(analysis).includes(point) ? "目标" : libertyPoints(analysis).includes(point) ? "气" : undefined) : undefined} className={"point " + (stone ?? "")} aria-label={point + " " + (stone === "B" ? "黑" : stone === "W" ? "白" : "空")} onClick={() => play(point, "trial")}>{stone ? "●" : "+"}</button>;
-    })}
-   </div>
+   <GoBoard frame={frame} label="教学试下棋盘" previewPlayer={game.frames[example.step].nextPlayer} onPlay={point => play(point, "trial")} mark={point => answer && analysis.evidence.some(e => e.move === selected && e.targets.some(t => t.stones.includes(point))) ? "目标" : answer && point === selected ? "推荐" : hint && !trial ? (targetPoints(analysis).includes(point) ? "目标" : libertyPoints(analysis).includes(point) ? "气" : undefined) : undefined} />
  </section>;
 }

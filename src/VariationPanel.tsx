@@ -1,3 +1,4 @@
+import {GoBoard} from "./GoBoard";
 import {useEffect, useState} from "react";
 import {analyzeVariation, type VariationAnalysis} from "./variationAnalysis";
 type AnalysisState = VariationAnalysis | {kind:"loading"} | {kind:"error"; message:string};
@@ -39,11 +40,6 @@ export function VariationPanel({game, example, onExit}: {game: Replay; example: 
   <button onClick={() => {change(seekVariation(current, current.origin));}}>回到变化起点</button>
   <button onClick={onExit}>切回实战</button>
   {error && <p role="alert">{error}</p>}
-  <div className="board" aria-label="变化棋盘">
-   {frame.board.map((stone, i) => {
-    const point = String.fromCharCode(97 + i % 19) + String.fromCharCode(97 + Math.floor(i / 19));
-    return <button key={i} data-mark={analysis.kind === "ready" ? analysis.targets.includes(point) ? "目标" : analysis.liberties.includes(point) ? "气" : undefined : undefined} className={"point " + (stone ?? "")} aria-label={point + " " + (stone === "B" ? "黑" : stone === "W" ? "白" : "空")} onClick={() => play(point)}>{stone ? "●" : "+"}</button>;
-   })}
-  </div>
+  <GoBoard frame={frame} label="变化棋盘" onPlay={play} mark={point => analysis.kind === "ready" ? analysis.targets.includes(point) ? "目标" : analysis.liberties.includes(point) ? "气" : undefined : undefined} />
  </section>;
 }

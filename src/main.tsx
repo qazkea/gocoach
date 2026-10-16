@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { importReplay, MAX_FILE_BYTES, type Replay } from "./replay";
 import "./style.css";
+import {GoBoard} from "./GoBoard";
 import {Course} from "./TeachingPanel";
 import {EngineEntry} from "./EnginePanel";
 
@@ -74,14 +75,7 @@ function App() {
         {([["起始", 0], ["上一手", step - 1], ["下一手", step + 1], ["末尾", game.frames.length - 1]] as const).map(([label, n]) =>
           <button key={label} disabled={n === step || n < 0 || n >= game.frames.length} onClick={() => setStep(n)}>{label}</button>)}
       </nav>
-      <div className="board" aria-label="19 路棋盘">
-        {frame.board.map((stone, i) => {
-          const point = String.fromCharCode(97 + i % 19) + String.fromCharCode(97 + Math.floor(i / 19));
-          return <span key={i} role="img" aria-label={point + " " + (stone === "B" ? "黑" : stone === "W" ? "白" : "空")} className={"point " + (stone ?? "")}>
-            {stone ? "●" : "+"}
-          </span>;
-        })}
-      </div>
+      <GoBoard frame={frame} label="19 路棋盘" />
     </section>}
   </main>;
 }

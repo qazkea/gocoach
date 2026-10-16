@@ -1,1 +1,33 @@
-body{font-family:system-ui,sans-serif;background:#f6f4ee;color:#20241e;margin:0}main{max-width:880px;margin:32px auto;padding:0 24px}button,input{font:inherit}button{margin:0 8px 16px 0;padding:8px 16px}button:focus-visible,input:focus-visible{outline:3px solid #126c9c} .board{display:grid;grid-template-columns:repeat(19,1fr);width:min(76vw,608px);background:#d7b477;padding:12px}.board button{margin:0;padding:0;border:0;background:transparent;cursor:pointer}.point{position:relative;aspect-ratio:1;display:grid;place-items:center;color:#82643c;font-size:clamp(10px,2vw,26px);line-height:1}.point.B{color:#111}.point.W{color:#fff;text-shadow:0 0 2px #222}[role=alert]{color:#a42219}.point[data-mark]::after{content:attr(data-coordinate);position:absolute;right:1px;bottom:0;font:9px system-ui;color:#111;background:#fff}.point[data-mark="目标"]{box-shadow:inset 0 0 0 3px #b83a25}.point[data-mark="气"]{box-shadow:inset 0 0 0 3px #146b9b}.point[data-mark="推荐"]{box-shadow:inset 0 0 0 3px #21753c}.board button:focus-visible{outline:3px solid #126c9c;z-index:1}
+body{font-family:system-ui,sans-serif;background:#f6f4ee;color:#20241e;margin:0}
+main{max-width:880px;margin:32px auto;padding:0 24px}
+button,input{font:inherit}
+button{margin:0 8px 16px 0;padding:8px 16px}
+button:focus-visible,input:focus-visible{outline:3px solid #126c9c}
+[role=alert]{color:#a42219}
+
+.board{
+ position:relative; width:min(100%,630px); aspect-ratio:1; margin:16px 0 24px; container-type:inline-size;
+ border-radius:8px;
+ background:repeating-linear-gradient(3deg,transparent 0 9px,#85541d06 10px,transparent 12px 24px),linear-gradient(110deg,#f4dfb8,#e8c994 65%,#efd6aa);
+ box-shadow:inset 0 0 0 1px #ad804b55,inset 0 0 22px #9d6a2420,0 4px 10px #422b1518;
+}
+.board-grid{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.grid-lines{stroke:#765c3e;stroke-width:.026;fill:none}
+.star-points{fill:#654c30}
+.board-coordinates{fill:#705536;font: .36px system-ui,sans-serif;text-anchor:middle;dominant-baseline:central}
+@container (max-width:450px){.board-coordinates{font-size:.6px}}
+.board-points{position:absolute;inset:4.76190476%;display:grid;grid-template-columns:repeat(19,1fr);grid-template-rows:repeat(19,1fr)}
+.point{position:relative;display:grid;place-items:center;min-width:0;min-height:0;aspect-ratio:1;box-sizing:border-box}
+.board button.point{margin:0;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer;touch-action:manipulation}
+.stone{position:absolute;width:88%;height:88%;border-radius:50%;box-sizing:border-box;pointer-events:none;box-shadow:0 1px 2px #291b1466}
+.stone.B{background:radial-gradient(circle at 34% 27%,#555b60 0,#24282b 36%,#080a0c 78%);border:1px solid #111}
+.stone.W{background:radial-gradient(circle at 33% 25%,#fff 0,#fcfcf7 40%,#d4d3cb 90%);border:1px solid #b5b4ab}
+.preview{opacity:0;box-shadow:none}
+.point:hover .preview,.point:focus-visible .preview{opacity:.42}
+.last-move{position:absolute;width:24%;height:24%;border:2px solid #fff;border-radius:50%;box-sizing:border-box;pointer-events:none}
+.W .last-move{border-color:#232b33}
+.point[data-mark]::after{content:'';position:absolute;inset:1%;border:2px solid;pointer-events:none;border-radius:18%;box-sizing:border-box}
+.point[data-mark="目标"]::after{border-color:#ae3028}
+.point[data-mark="气"]::after{border-color:#146b9b;border-style:dashed}
+.point[data-mark="推荐"]::after{border-color:#21753c;border-radius:0}
+.board button.point:focus-visible{outline:2px solid #074b88;outline-offset:1px;box-shadow:0 0 0 3px #fff;z-index:2}

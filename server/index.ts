@@ -42,7 +42,7 @@ const server=createServer(async(req,res)=>{
  if(req.method!=='GET'&&req.method!=='HEAD') {json(405,{error:'方法拒绝'});return;}
  if(vite) {
   // Vite transforms browser sources, but is not a general workspace file server.
-  const browserFiles=['main.tsx','replay.ts','teaching.ts','TeachingPanel.tsx','variation.ts','variationAnalysis.ts','VariationPanel.tsx','engine.ts','EnginePanel.tsx','style.css'];
+  const browserFiles=['main.tsx','replay.ts','teaching.ts','TeachingPanel.tsx','variation.ts','variationAnalysis.ts','VariationPanel.tsx','engine.ts','EnginePanel.tsx','GoBoard.tsx','style.css'];
   const allowed=pathname==='/'||pathname==='/index.html'||pathname==='/@vite/client'||pathname==='/node_modules/vite/dist/client/env.mjs'||browserFiles.some(f=>pathname==='/src/'+f)||/^\/node_modules\/\.vite\/deps\/[a-zA-Z0-9_.-]+\.(js|map)$/.test(pathname)||/^\/analysis\/(?:variations\/corner-a\/)?[a-zA-Z0-9-]+\.json$/.test(pathname);
   if(!allowed) {json(404,{error:'不存在'});return;}
   vite.middlewares(req,res,()=>json(404,{error:'不存在'}));return;
