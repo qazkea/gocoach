@@ -1,5 +1,7 @@
 # 围棋赛后复盘教练：第一版需求规格
 
+> **最新范围变更**：用户在试用后明确要求整局判断、逐手中文讲解和桌面版，并选择“导入后自动整局扫描”“看到哪手讲哪手并缓存”。以 [desktop-review-scope.md](./desktop-review-scope.md) 为最新范围依据；下文原版“网页优先”“不逐手讲整盘”及相关排除条款已被覆盖，1–3个精选教学改为可选学习入口。历史规格保留供追溯，具体新任务与设计尚待整理；这不是新增功能已经完成或真实在线调用已经获准的声明。
+
 Category: enhancement
 Status: ready-for-agent
 Execution: in-progress
