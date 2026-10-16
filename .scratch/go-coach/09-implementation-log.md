@@ -59,3 +59,26 @@
 - 小样例与缓存热重复不证明整盘性能、跨硬件稳定性或最强手；候选/PV不生成自然语言棋理、教学精选或练习。
 - 不是完整国家规则/野狐认证、不是用户真实棋谱兼容验收；不做聊天、练习、跨盘学习记录或在线AI。
 - 没有替代主代理的独立Spec/Standards审查、整合复测与票状态更新。用户的授权资产未改变，未外发棋谱、付费、push或发布。
+
+## 独立审查后资源与 PV 修正（仍待验收，EPIPE 验证阻塞）
+
+- 隔离 worktree `C:/Users/789/AppData/Local/Temp/pi-agent-1de03024-2367-4cf-f4503212`，分支 `implement/09-resource-fix`；基线 `fea729c`，结束验证前实际 merge `integration/go-coach` 到 `a25226c`。未调度、push、改票状态或父 spec。主代理的 PV 规格澄清经 merge 取得。
+- 所有致命 `fail`（含 stdin error、spawn error、启动/查询/确认超时）统一失效代次并取得同一个回收 Promise；旧 child 不提前清空。重试必须先等待回收；close 等待同一 Promise。stdin EOF 后3秒仅向自己 child 发 SIGKILL，6秒仍无 exit 则显式失败、保留 child 以供后续回收，不允许覆盖。无 PID/已经 exit 或 signalCode 的进程不等待未来 exit。
+- fixture 从 mkdtemp/fork/startup/use 开始由 finally 保护；共享测试 helper 区分无 PID、已退出、IPC 已断和存活，4秒强制关闭、8秒报失败；send callback/同步异常不绕过清理。tempdir 在最外 finally 删除；真实浏览器脚本也使用该 helper 并核对自有引擎 PID。
+
+### 实际失败与通过，不混淆证据
+
+1. **EPIPE 仍未证实**：先添加浏览器场景，外部脚本第一请求后保持 interval 存活，关闭读取端并返回 noResults；网页再请求期望“引擎输入已关闭”。在本机 Node 24/Windows 依次实际尝试 `stdin.destroy()`、`closeSync(0)`、`stdin._handle.close()`，并增加多次网页重试。均仍显示查询等待，没有真实管道错误。这些是失败的故障注入尝试，**不是产品 EPIPE RED**。Windows 场景明确 skip；非 Windows 分支也未运行验证。未把 crash、stderr 或 EOF 等同 EPIPE，未直接调用 KataGo 类或 mock HTTP。
+2. 独立的不合作外部进程经真实 stderr 报 fatal，后续网页立即重试：500ms 时旧 PID 仍活、观测 PID 列表仍仅一项、不能显示成功；3秒后旧 PID 消失，新代次完成。另一个浏览器场景在回收过程中结束，由 fixture 请求服务关闭并检查所有自有 PID。两条通过；属于补充覆盖，**不是先前 EPIPE 的 GREEN**。首次 stderr 场景脚本还提前回了成功，修正外部场景后通过，不当作产品 RED。
+3. **fixture RED→GREEN**：先在原 fixture 上运行 `node tests/fixture-resource-check.mjs timeout`，20秒未监听，外层发现 `tempExists:true`（PID 53256 已由测试 worker 环境收尾）；外层断言失败并清理该次目录。修复后 timeout / exit / disconnect / nofork / spawn-error 五种平台检查全部外层退出0、`alive:false,tempExists:false`。每次嵌套 Playwright 的1条失败是有意启动故障，不是正常业务套件失败，也不宣称嵌套套件通过。注入只重定向测试 fork 的外部可执行文件，未改生产 HTTP。
+4. **PV RED→GREEN**：空19路黑先经外部脚本返回合法16着，实际浏览器 RED 为“PV 无效或超限”；将数组上限改为16、UI/README说明首着＋15后续后 GREEN。原 longPV 场景改为合法17着并明确断言 PV 超限。保留 cfg `analysisPVLen=15` 和其他预算。
+   独立手算序列：`D16,Q4,D4,Q16,K10,L10,K11,L11,K12,L12,K13,L13,K14,L14,K15,L15`，17着追加 `K16`；全部不同交叉点，K/L 两列同色链各有外侧气，不靠重复占点伪测长度。来源由主代理核对：`https://raw.githubusercontent.com/lightvector/KataGo/v1.18.1/docs/Analysis_Engine.md`（analysisPVLen 不含首着）；`https://raw.githubusercontent.com/lightvector/KataGo/v1.18.1/cpp/search/searchresults.cpp`（getAnalysisDataOfSingleChild 先 push move，再 appendPV；getAnalysisJson 输出整条）。
+
+### 最终验证及环境记录
+
+- 未下载依赖：复用已安装 node_modules 的本机复制。首次尝试目录 junction 时 Vite 模块路径导致网页不可用，改为本地复制后正常；那次 setInputFiles 超时不是产品 RED。
+- merge 后 `npm.cmd run typecheck`、`npm.cmd run build`、`git diff --check` 通过。
+- merge 后完整 `npx.cmd playwright test --workers=4`：**89通过 / 0失败 / 1跳过**（90条，约2.1分钟）。保留既有86语义；新增合法16着、不合作重试、回收中服务退出3条通过；真实 EPIPE 1条因上述平台阻塞跳过。
+- 已授权真实 KataGo：使用新的 `web/review-fix/implementer.local.json` 和 `implementer-data`，原 probe/acceptance-4 不覆盖。两次 `node tests/real-engine-browser.mjs` 各14次真实浏览器分析通过；最终证据 `D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl/web/review-fix/implementer-browser-final`。最终原局首次2.932秒、重复0.178秒；分支首次0.884秒、重复0.130秒，其余10次0.128–0.908秒。小样本不作性能保证。
+- 最终 `exit.json`：server50148、engine39296，code0、success:true、remaining:[]；首次复跑server10584/engine31404也已退出。旧故障尝试及正常套件均由自己的 fixture 收尾，只处理本次生成/记录的PID。最后一次组合 PowerShell 命令因随后 `Get-Process` 查已不存在的旧PID返回1，真实浏览器本身的 exit.json 明确成功；不把该查询退出码冒充引擎失败。
+- **未完成**：本机真实 EPIPE 的浏览器端复现与修复前后证据，及主代理独立双轴复审/整合复测。未自标 done。未安装引擎、模型、驱动或运行库，未外发、付费或发布。

@@ -70,7 +70,9 @@ npm.cmd run dev
   HA≥2 只接受数量匹配的纯黑初盘和白先：Chinese 的 whiteHandicapBonus=N，Japanese 为0。
 - 显式近似 profile：SIMPLE ko，Chinese AREA/NONE tax，Japanese TERRITORY/SEKI tax，禁自杀；
   不是完整中国/日本裁判规则，也不声称野狐完整认证。完整有序历史用于实际棋规与所有候选/PV验证。
-- 固定 BLACK 视角，正目差为黑领先。预算100 visits、cfg maxTime2秒，分析线程1/搜索线程2、batch2/cache18、PV15、无ownership。
+- 固定 BLACK 视角，正目差为黑领先。预算100 visits、cfg maxTime2秒，分析线程1/搜索线程2、batch2/cache18、analysisPVLen=15（不含首着，PV数组最多16着）、无ownership。
+- 资源平台检查：`node tests/fixture-resource-check.mjs timeout`（亦支持 `exit` / `disconnect` / `nofork` / `spawn-error`）。嵌套 Playwright 启动失败是预期；以外层命令的退出码和 PID/临时目录检查判定。独立配置不进入正常浏览器套件。
+- Windows 的真实 EPIPE 浏览器场景暂因 stdin 句柄关闭未能触发管道错误而跳过；致命 stderr、不合作进程3秒收尾及关闭期间等待有独立覆盖，但不能替代 EPIPE 验证。
   实际 visits 照实显示，可能略超100。启动600秒与就绪查询30秒独立，不能将首次调优耗时当查询耗时。
 - 候选不等于全部合法手或最强证明，PV 是假设而非必然结局，估值不是棋理原因。
   显示前10项，同时显示总数与未展示数；缺PV不补齐。未知循环只标不支持，不冒充非法着证明。

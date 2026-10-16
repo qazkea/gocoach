@@ -2,18 +2,19 @@
 // GO_COACH_CONFIG and GO_COACH_EVIDENCE must point outside the repository.
 import {chromium,expect} from '@playwright/test';
 import {fork} from 'node:child_process';
+import {stopOwnedChild,waitForListening} from './process-cleanup.ts';
 import {mkdir,writeFile,appendFile,readFile,readdir,copyFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 if(!process.env.GO_COACH_CONFIG||!process.env.GO_COACH_EVIDENCE)throw Error('Set GO_COACH_CONFIG and GO_COACH_EVIDENCE');
 const evidence=resolve(process.env.GO_COACH_EVIDENCE);await mkdir(evidence,{recursive:true});
 const config=JSON.parse(await readFile(process.env.GO_COACH_CONFIG,'utf8'));
 const child=fork(resolve('.server/index.js'),['--production','--port','0'],{silent:true,env:{...process.env,GO_COACH_TEST_ENGINE:''}});
-const writes=[];
-child.stdout.on('data',d=>writes.push(appendFile(join(evidence,'server.stdout.log'),d)));
+const writes=[], enginePids=new Set();let stdout='';
+child.stdout.on('data',d=>{writes.push(appendFile(join(evidence,'server.stdout.log'),d));stdout+=d;for(const m of stdout.matchAll(/ENGINE pid=(\d+)/g))enginePids.add(Number(m[1]));});
 child.stderr.on('data',d=>writes.push(appendFile(join(evidence,'server.stderr.log'),d)));
 let browser;const records=[];let failure;
 try {
- const url=await new Promise((res,rej)=>{const timer=setTimeout(()=>rej(Error('server startup timeout')),20000);child.stdout.on('data',d=>{const m=String(d).match(/LISTENING (http:\/\/127\.0\.0\.1:\d+)/);if(m){clearTimeout(timer);res(m[1]);}});child.once('exit',()=>{clearTimeout(timer);rej(Error('server exited'));});});
+ const url=await waitForListening(child);
  browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1440,height:1100}});
  // Chromium does not retain bodies consumed through the streaming reader.
  // Capture real browser requests here; opt-in KataGo logs retain raw responses.
@@ -70,10 +71,12 @@ try {
  expect((await readFile(join(evidence,'http-inputs.jsonl'),'utf8')).trim().split('\n')).toHaveLength(records.length);
 } catch(e){failure=e;console.error(e);}
 finally{
- await browser?.close();
- const exited=new Promise(res=>child.once('exit',code=>res(code)));child.send('close');
- const code=await exited;
+ try{await browser?.close();}catch(e){failure??=e;}
+ try{await stopOwnedChild(child);}catch(e){failure??=e;}
+ const code=child.exitCode;
+ const remaining=[...enginePids].filter(pid=>{try{process.kill(pid,0);return true;}catch{return false;}});
+ if(remaining.length){failure??=Error('own engines survived server shutdown: '+remaining);for(const pid of remaining){try{process.kill(pid,'SIGKILL');}catch{}}}
  try{for(const file of await readdir(join(config.dataDir,'engine-logs')))await copyFile(join(config.dataDir,'engine-logs',file),join(evidence,file));}catch{}
- await Promise.all(writes);await writeFile(join(evidence,'exit.json'),JSON.stringify({serverPid:child.pid,code,success:!failure},null,2));
+ await Promise.all(writes);await writeFile(join(evidence,'exit.json'),JSON.stringify({serverPid:child.pid,enginePids:[...enginePids],remaining,code,success:!failure},null,2));
 }
 if(failure)process.exitCode=1;

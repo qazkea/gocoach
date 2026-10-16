@@ -58,8 +58,29 @@ for(const scenario of ['invalidPV','invalidMove','invalidNumber','wrongTurn','wr
  test('不可靠输出整次拒绝且保留棋盘，不伪造候选',async({page,engineServer})=>{
   await open(page,engineServer.url);
   await expect(panel(page)).toContainText('分析失败');
+  if(scenario==='longPV')await expect(panel(page)).toContainText('PV 无效或超限');
   await expect(panel(page).getByLabel('引擎结果')).toHaveCount(0);
   await expect(panel(page).getByRole('button',{name:'dd 空',exact:true})).toBeVisible();
+ });
+});
+test.describe('uncooperative shutdown',()=>{
+ test.use({engineScenario:'uncooperative'});
+ test('服务退出等待正在进行的旧进程回收',async({page,engineServer})=>{
+  await open(page,engineServer.url);
+  await expect(panel(page)).toContainText('noResults');
+  await panel(page).getByRole('button',{name:'重新分析当前局面'}).click();
+  await expect(panel(page)).toContainText('warning/error');
+  const old=(await engineServer.observed()).find(q=>q.action==='held-open').pid;
+  expect(()=>process.kill(old,0)).not.toThrow();
+  // Fixture now closes the server during its 3s grace period and checks every owned PID.
+ });
+});
+test.describe('pv16',()=>{
+ test.use({engineScenario:'pv16'});
+ test('首着加15后续的合法16着PV可以显示',async({page,engineServer})=>{
+  await open(page,engineServer.url,'(;FF[4]RU[Chinese]KM[7.5])');
+  await expect(panel(page)).toContainText('分析完成');
+  await expect(panel(page)).toContainText('ke');
  });
 });
 test.describe('missingPV',()=>{
@@ -96,6 +117,30 @@ test.describe('loading',()=>{
   await open(page,engineServer.url);
   await expect(panel(page)).toContainText('引擎加载中');
   await expect(panel(page)).toContainText('分析完成');
+ });
+});
+for(const scenario of ['broken-input','uncooperative'])test.describe(scenario,()=>{
+ test.use({engineScenario:scenario});
+ test(scenario==='broken-input'?'真实输入管道失败后先回收旧PID再重试新代次':'致命stderr后不合作进程必须先被回收再启动新代次',async({page,engineServer})=>{
+  test.skip(scenario==='broken-input'&&process.platform==='win32','Windows stdin closure attempts did not produce EPIPE; not equivalent to exit.');
+  await open(page,engineServer.url);
+  await expect(panel(page)).toContainText('noResults');
+  const old=(await engineServer.observed()).find(q=>q.action==='held-open').pid;
+  expect(()=>process.kill(old,0)).not.toThrow();
+  await panel(page).getByRole('button',{name:'重新分析当前局面'}).click();
+  if(scenario==='broken-input')await expect(panel(page)).toContainText('引擎输入已关闭');
+  else await expect(panel(page)).toContainText('warning/error');
+  const start=Date.now();
+  await panel(page).getByRole('button',{name:'重新分析当前局面'}).click();
+  // A live, uncooperative old process must not be replaced immediately.
+  await page.waitForTimeout(500);
+  expect(await engineServer.pids()).toEqual([old]);
+  expect(()=>process.kill(old,0)).not.toThrow();
+  await expect(panel(page)).not.toContainText('分析完成');
+  await expect(panel(page)).toContainText('分析完成',{timeout:7000});
+  expect(await engineServer.pids()).toHaveLength(2);
+  expect(Date.now()-start).toBeGreaterThan(2000);
+  expect(()=>process.kill(old,0)).toThrow();
  });
 });
 test.describe('crash',()=>{

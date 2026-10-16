@@ -45,7 +45,7 @@ function EnginePanel({game,step,onClose}:{game:Replay;step:number;onClose:()=>vo
   <p>只向同机回环服务发送必要棋局，无外发；不发送名字、评论或完整 SGF。</p>
   <p>固定黑方视角（BLACK）：正目差表示黑领先。候选不是全部合法手或最强证明；估值不是原因，PV 是假设变化，不是必然结局。与预设示例教学分开。</p>
   <p>规则记录：{game.rules}；贴目：{game.komi}；HA：{game.handicap}。仅近似计算 profile，不代表完整国家规则或野狐认证。</p>
-  <p>请求预算：100 visits / maxTime 2秒；分析线程1，搜索线程2，batch2/cache18，PV最多15，无ownership。</p>
+  <p>请求预算：100 visits / maxTime 2秒；分析线程1，搜索线程2，batch2/cache18，PV最多16着（首着＋最多15着后续），无ownership。</p>
   <p>原局第 {current.origin} 手；变化 {current.cursor-current.origin} 手；轮{frame.nextPlayer==='B'?'黑':'白'}；最近落子：{frame.move}。保留完整已知前缀，不编造初盘前历史。</p>
   <p aria-live="polite">{status}</p>
   <button onClick={()=>{setResult(undefined);setStatus('等待本机服务…');setRetry(n=>n+1);}}>重新分析当前局面</button>

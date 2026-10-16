@@ -48,7 +48,7 @@ export function result(value:unknown, p:Position, engine:string, model:string):E
   tryMove(p.replay,p.replay.frames.length-1,move==='pass'?'':move);
   let pv:string[]|undefined;
   if(m.pv!==undefined) {
-   if(!Array.isArray(m.pv) || m.pv.length>15 || m.pv.some(x=>typeof x!=='string')) throw Error('引擎 PV 无效或超限');
+   if(!Array.isArray(m.pv) || m.pv.length>16 || m.pv.some(x=>typeof x!=='string')) throw Error('引擎 PV 无效或超限');
    pv=m.pv.map(x=>sgf(x));
    if(pv.length && pv[0]!==move) throw Error('引擎 PV 首着不符');
    let history:Replay=p.replay;
