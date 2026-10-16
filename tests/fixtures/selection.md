@@ -25,7 +25,8 @@ W ab自杀；其他合法白应手无法一手提黑堵截链，固定B ab提aa�
 
 - C step0 W bb、B pass、W ca确能提ba，但B ca可延伸到da/cb，固定W ca此时占点。因此单条pass变化不是强制证明；该候选不能入选。
 - D去掉黑ac：W ab可逃。这个修改后的完整文件不再匹配D公开源，应用明确无示例分析，不套原D题。
-- C step1另有B ll可连接黑lm/ml，连接后气kl/lk/km/ln/nl/mk。但若同题另一推荐B gi涉及gh/gj，合计四条原链，超过每题两链，拒绝。
+- C step1另有B ll可连接黑lm/ml。独立逐邻核对：lm邻km空/mm白/ll空/ln空，初始三气km/ll/ln；ml邻ll空/nl空/mk空/mm白，初始三气ll/nl/mk。ll邻kl空/ml黑/lk空/lm黑，连接后lm/ll/ml同链，去掉链内邻点及白mm，恰六气kl/lk/km/ln/nl/mk，无提子。若同题另一推荐B gi涉及gh/gj，合计四条原链，超过每题两链，拒绝；若拆成两个同step、同外部id但不同目标的候选，则两课均合法，真实选择必须保留，切换不得复用旧课状态。
+- C step1 B dd合法且未影响gh/gj：gh邻fh/hh/gg/gi均空，gj邻fj/hj/gi/gk均空；两条黑链仍独立，各四气，共享gi不代表已经相连。反馈不能把gh的四气归给gh/gj同一链。
 - 错气、错提子点、重复同一链伪称两链、无法解除一气、错目标或第三手等均不能入选。
 
 ## 外部候选格式

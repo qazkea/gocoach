@@ -164,5 +164,15 @@ export function attempt(game:Replay, lesson:Lesson, point:string): {frame:Frame;
  const group = groupAt(frame,targets[0]);
  const reached = lesson.kind === "force" ? false : lesson.kind === "capture" ? targets.every(p=>groupAt(frame,p).color !== lesson.evidence[0].color) : group.color === lesson.evidence[0].color && targets.every(p=>group.stones.includes(p)) && group.liberties.length >= 2;
  if (lesson.kind === "force") return {frame,feedback:lesson.evidence.some(e=>e.move === point) ? "这是已核验强制提子的首手，尚未提净；查看答案核对全部合法应手与第三手。" : "这手没有对应强制提子证明，保留结论。"};
+ if (lesson.kind === "connect" && !reached) {
+  const seen = new Set<string>();
+  const chains = targets.flatMap(point => {
+   if (seen.has(point)) return [];
+   const actual = groupAt(frame,point);
+   actual.stones.forEach(stone => seen.add(stone));
+   return [`${colorName(actual.color!)} ${actual.stones.join("、")} 当前${actual.liberties.length}气 ${actual.liberties.join("、")}`];
+  });
+  return {frame,feedback:`${chains.join("；")}；未达到本课目标，这不等于全局坏棋。`};
+ }
  return {frame,feedback:reached ? `达到本课目标：${goalText(lesson)}。这不代表已掌握或全局最优。` : `${colorName(lesson.evidence[0].color)} ${targets.join("、")} 仍保留 ${group.liberties.join("、")} 这口气；未达到本课目标，这不等于全局坏棋。`};
 }

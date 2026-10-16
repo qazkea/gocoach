@@ -232,6 +232,59 @@ test('两类推荐合计目标不能超过两链，不把每条推荐各自合�
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 0 个');
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('最多2链/6子');
 });
+test('同ID同步不同目标的合法课往返时清空答案提示试下及变化', async ({page}) => {
+ const other = {...connect,teaching:'ll',engine:'ll',evidence:[{move:'ll',targets:[{stones:['lm'],liberties:['km','ll','ln']},{stones:['ml'],liberties:['ll','nl','mk']}],captured:[],afterLiberties:['kl','lk','km','ln','nl','mk']}]};
+ await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[connect,other]}}));
+ await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 2 个');
+ await page.getByRole('button',{name:'进入核验教学局面'}).click();
+ const lesson=page.getByRole('region',{name:'局面教学'});
+ const initial = async (target:string) => {
+  await expect(lesson).toContainText('目标黑 '+target);
+  await expect(lesson).toContainText('模式：先试下一手');
+  await expect(lesson).not.toContainText('原局面提示');
+  await expect(lesson).not.toContainText('实战落子：');
+  await expect(lesson).not.toContainText('达到本课目标');
+  for (const point of ['gi','ll','dd']) await expect(lesson.getByRole('button',{name:point+' 空',exact:true})).toBeVisible();
+  await expect(lesson.locator('[data-mark]')).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'变化探索'})).toHaveCount(0);
+ };
+ await initial('gh、gj');
+ for (const action of ['答案','试下','变化']) {
+  await lesson.getByRole('button',{name:'请求提示'}).click();
+  await lesson.getByRole('button',{name:'直接看答案'}).click();
+  if (action === '试下') await lesson.getByRole('button',{name:'dd 空',exact:true}).click();
+  if (action === '变化') await lesson.getByRole('button',{name:'探索连续变化'}).click();
+  await page.getByRole('button',{name:'下一个精选'}).click();
+  await initial('lm、ml');
+  await lesson.getByRole('button',{name:'请求提示'}).click();
+  await expect(lesson.getByRole('button',{name:'lm 黑',exact:true})).toHaveAttribute('data-mark','目标');
+  await lesson.getByRole('button',{name:'直接看答案'}).click();
+  await expect(lesson.getByRole('button',{name:'ll 黑',exact:true})).toBeVisible();
+  if (action === '试下') await lesson.getByRole('button',{name:'dd 空',exact:true}).click();
+  if (action === '变化') await lesson.getByRole('button',{name:'探索连续变化'}).click();
+  await page.getByRole('button',{name:'上一个精选'}).click();
+  await initial('gh、gj');
+ }
+});
+test('连接课偏离目标的合法试下分别说明两条棋链的实际气', async ({page}) => {
+ await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'进入核验教学局面'}).click();
+ await page.getByRole('button',{name:'下一个精选'}).click();
+ await page.getByRole('button',{name:'下一个精选'}).click();
+ const lesson=page.getByRole('region',{name:'局面教学'});
+ await lesson.getByRole('button',{name:'dd 空',exact:true}).click();
+ await expect(lesson.getByRole('button',{name:'dd 黑',exact:true})).toBeVisible();
+ for (const point of ['gh','gj']) await expect(lesson.getByRole('button',{name:point+' 黑',exact:true})).toBeVisible();
+ for (const point of ['fh','hh','gg','gi','fj','hj','gk']) await expect(lesson.getByRole('button',{name:point+' 空',exact:true})).toBeVisible();
+ const feedback=lesson.locator('p[aria-live="polite"]').filter({hasText:'未达到本课目标'});
+ // Independent four-neighbor facts, not a snapshot or application-generated expected value.
+ await expect(feedback).toContainText(/黑 gh[^；。]*fh、hh、gg、gi/);
+ await expect(feedback).toContainText(/黑 gj[^；。]*fj、hj、gi、gk/);
+ await expect(feedback).not.toContainText('黑 gh、gj');
+ await expect(feedback).toContainText('不等于全局坏棋');
+ await expect(feedback).not.toContainText('已掌握');
+});
 test('上传A即分析并精选一个目标，数量时长只是目标', async ({page}) => {
  await page.goto('/');
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-finished.sgf');

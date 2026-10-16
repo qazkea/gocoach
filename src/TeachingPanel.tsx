@@ -10,18 +10,20 @@ const modeLabels: Record<TeachingMode, string> = {
  teaching: "本课教学推荐",
  engine: "模拟引擎首选",
 };
+type AnalysisState = {status:"loading"} | {status:"ready"; selection:Selection} | {status:"error"; message:string};
 export function Course({game, step, onStep}: {game: Replay; step: number; onStep: (step:number) => void}) {
  const example = matchExample(game);
- const [result, setResult] = useState<Selection>();
+ const [state, setState] = useState<AnalysisState>({status:"loading"});
+ const result = state.status === "ready" ? state.selection : undefined;
+ const message = state.status === "loading" ? "分析中…" : state.status === "error" ? state.message : `精选 ${state.selection.lessons.length} 个。${state.selection.notice}`;
  const [index, setIndex] = useState(0);
- const [state, setState] = useState("分析中…");
  const [request, setRequest] = useState(0);
  const [opened, setOpened] = useState(false);
  useEffect(() => {
   if (!example) return;
   let active = true;
-  setResult(undefined); setState("分析中…");
-  analyze(game, example).then(value => {if (active) {setResult(value); setIndex(0); setState(`精选 ${value.lessons.length} 个。${value.notice}`);}}, error => {if (active) setState(error.message);});
+  setState({status:"loading"});
+  analyze(game, example).then(value => {if (active) {setIndex(0); setState({status:"ready",selection:value});}}, error => {if (active) setState({status:"error",message:error.message});});
   return () => {active = false;};
  }, [game, request]);
  useEffect(() => {
@@ -33,17 +35,16 @@ export function Course({game, step, onStep}: {game: Replay; step: number; onStep
  const visible = opened && step === (current?.step ?? example.step);
  return <section aria-label="教学精选">
   <p>每盘目标 1–3 个，约 10–15 分钟；不是保证，不凑数量。</p>
-  <p aria-live="polite">{state}</p>
-  {!visible && state !== "分析中…" && !result && <button onClick={() => setRequest(n=>n+1)}>重试分析</button>}
+  <p aria-live="polite">{message}</p>
+  {!visible && state.status === "error" && <button onClick={() => setRequest(n=>n+1)}>重试分析</button>}
   {(!result || current) && <button onClick={() => {if (opened && !visible && !result) setRequest(n => n + 1); setOpened(true); onStep(current?.step ?? example.step);}}>进入核验教学局面</button>}
   {result && result.lessons.length > 1 && <nav aria-label="精选导航"><span>第 {index + 1} / {result.lessons.length} 个精选</span><button disabled={index === 0} onClick={() => {setIndex(index-1); setOpened(true); onStep(result.lessons[index-1].step);}}>上一个精选</button><button disabled={index === result.lessons.length-1} onClick={() => {setIndex(index+1); setOpened(true); onStep(result.lessons[index+1].step);}}>下一个精选</button></nav>}
-  {visible && (current ? <Teaching key={request + ':' + step + ':' + current.lessonId} game={game} analysis={current} /> : <section aria-label="局面教学"><p>{state}</p>{state !== "分析中…" && <button onClick={() => setRequest(n => n + 1)}>重试分析</button>}</section>)}
+  {visible && (current ? <Teaching key={request + ':' + index + ':' + step} game={game} analysis={current} /> : <section aria-label="局面教学"><p>{message}</p>{state.status === "error" && <button onClick={() => setRequest(n => n + 1)}>重试分析</button>}</section>)}
  </section>;
 }
 function Teaching({game, analysis}: {game: Replay; analysis: Lesson}) {
  const example = analysis;
  const [exploring, setExploring] = useState(false);
- const state = "准备就绪";
  const [trial, setTrial] = useState<Frame>();
  const [feedback, setFeedback] = useState("");
  const [hint, setHint] = useState(false);
@@ -64,8 +65,7 @@ function Teaching({game, analysis}: {game: Replay; analysis: Lesson}) {
   <h2>局面教学</h2>
   <p>示例分析：预设数据，非真实引擎或在线AI</p>
   <p>来源：自制合成样例 {example.id === "corner-a" ? "A" : example.id === "corners-b" ? "B" : "C/D"}，非野狐对局。手工核验原目标、气和有限落子证据；不推导全局优劣。</p>
-  <p aria-live="polite">{state}</p>
-  {state === "准备就绪" && <>
+  <p aria-live="polite">准备就绪</p>
    <p>第 {example.step} 手后，轮{game.frames[example.step].nextPlayer === "B" ? "黑" : "白"}；模式：{modeLabels[mode]}</p>
    <p>每次点击都从原局面重新试一手，不在结果盘继续行棋。坐标 aa 左上、ss 右下，先列后行。</p>
    <p>目标：{goalText(analysis)}。黑提子：{frame.blackCaptures}；白提子：{frame.whiteCaptures}</p>
@@ -90,6 +90,5 @@ function Teaching({game, analysis}: {game: Replay; analysis: Lesson}) {
      return <button key={i} title={point} data-coordinate={point} data-mark={answer && analysis.evidence.some(e => e.move === selected && e.targets.some(t => t.stones.includes(point))) ? "目标" : answer && point === selected ? "推荐" : hint && !trial ? (targetPoints(analysis).includes(point) ? "目标" : libertyPoints(analysis).includes(point) ? "气" : undefined) : undefined} className={"point " + (stone ?? "")} aria-label={point + " " + (stone === "B" ? "黑" : stone === "W" ? "白" : "空")} onClick={() => play(point, "trial")}>{stone ? "●" : "+"}</button>;
     })}
    </div>
-  </>}
  </section>;
 }

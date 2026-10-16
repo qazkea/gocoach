@@ -61,3 +61,26 @@
 - 现有精确C/D源没有会触发未知长循环的证明分支；真实回放/变化中的未知循环回归仍保留，证明器不将非IllegalMoveError当非法应手跳过，但没有另造可匹配源来动态触发该保护分支。
 - 同步有限证明对当前小样例快速，不声称真实引擎整盘性能。部分额外防护测试首跑GREEN如实记录，不伪造全部新增测试均有RED。
 - 等待主代理组织独立Spec/Standards审查及集成复测；本记录不标done。
+
+## 04审查修复（第二次实现交回）
+
+- 隔离worktree：`C:/Users/789/AppData/Local/Temp/pi-agent-a3e9f5f0-99a2-4a1-c4a9ef7b`；起始基线`a13466a976ae4f380d79e090dd01509f23af79d8`。分支`implement/04-review-fixes`，没有调度代理、push、修改主工作区或清理他人进程。
+- 仅修改TeachingPanel、teaching、selection浏览器回归、fixtures说明和本日志。未修改父spec、设计、任务状态、09或runtime；集成分支后来新增的04票Comments仅通过merge带入。
+- 测试边界仍为浏览器上传→真实候选核验/精选→教学/变化，仅拦截外部候选HTTP；同ID回归用两条实际合法的C step1连接课，不mock选择结果。ll/lm/ml的六气及dd后两链各四气在`tests/fixtures/selection.md`逐邻独立推算，mm白不是气。
+
+### 逐项RED→GREEN
+
+1. `npm.cmd test -- tests/selection.spec.ts -g '同ID同步' --workers=1`：先真实失败1条。切到lm/ml目标后仍是旧课“本课教学推荐”模式、gi结果盘、旧答案/提示和gh/gj反馈，预期“先试下一手”失败。仅把Teaching key从外部lessonId换成请求代次＋精选index＋step，再运行同命令 **1 passed**。测试往返两课，分别覆盖答案、合法试下和进入变化，核对新目标、初盘空点、无旧标记/答案/提示/反馈及变化退出。
+2. `npm.cmd test -- tests/selection.spec.ts -g '连接课偏离' --workers=1`：先真实失败1条。C默认连接课B dd后输出“黑 gh、gj 仍保留 fh、hh、gg、gi”，缺gj自己的fj/hj/gi/gk。修复仅针对未达标连接课：按实际棋链去重，逐链列完整棋子及实际气数/气，不再把首链的气归给全部目标；即便已连但不足两气也会列实际单链和气数，不武断称未连上。再运行同命令 **1 passed**。保留“不等于全局坏棋”，成功反馈的“并不代表已掌握”边界不变。
+3. Standards建议为已有GREEN上的审查重构，**不声称RED**：Course使用loading/ready/error判别联合，Selection只在ready状态，展示message不驱动分支；移除Teaching常量准备状态的无效条件层。随后typecheck通过，selection全套 **17 passed**，包括等待中进入、失败重试、迟到成功/失败隔离。
+
+### 合并与最终验证
+
+- `npm.cmd ci`成功，0漏洞；无引擎/模型下载。
+- 结束前`git merge integration/go-coach`先从a13466a快进至`e458129`（04审查记录）；提交前再次merge快进至`daecc72`，仅带入另一代理的09探针记录，本代理未编辑/运行09。
+- 在上述合并后运行`npm.cmd run typecheck`：通过。
+- `npm.cmd run build`：通过，34 modules。
+- `npm.cmd test -- --workers=2`：**58 passed，约2分钟**。原56条语义/断言保留，新增2条；无skip。
+- `git diff --check`：通过。
+- 最新daecc72合并后再次运行typecheck、build、全部浏览器和diffcheck，均通过，仍为 **58 passed（2.0分钟）**。最后只更新本日志，不再改业务或测试。
+- 本轮没有另造公开源来动态覆盖“已连但不足两气”的局面；实际distinct-group输出不依赖未连接假设。等待主代理独立复审及整合验收，不标done。
