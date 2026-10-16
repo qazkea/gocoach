@@ -147,13 +147,13 @@ function chain(board: Stone[], start: number) {
  }
  return {stones, liberties, hasLiberty: liberties.size > 0};
 }
-export function groupAt(frame: Frame, point: string): {color: Stone; stones: string[]; liberties: string[]} {
+export function groupAt(frame: Frame, point: string): {color: Stone; stones: string[]; liberties: string[]; neighbors: string[]} {
  if (!/^[a-s]{2}$/.test(point)) throw Error("不支持的落点");
  const p = (point.charCodeAt(1) - 97) * 19 + point.charCodeAt(0) - 97;
  const coord = (i: number) => String.fromCharCode(97 + i % 19) + String.fromCharCode(97 + Math.floor(i / 19));
- if (!frame.board[p]) return {color: null, stones: [], liberties: []};
+ if (!frame.board[p]) return {color: null, stones: [], liberties: [], neighbors: []};
  const group = chain(frame.board, p);
- return {color: frame.board[p], stones: [...group.stones].map(coord), liberties: [...group.liberties].map(coord)};
+ return {color: frame.board[p], stones: [...group.stones].map(coord), liberties: [...group.liberties].map(coord), neighbors:[...new Set([...group.stones].flatMap(neighbors))].filter(p=>!group.stones.has(p)).map(coord)};
 }
 // One move from an imported history; never mutates the original replay.
 export function tryMove(game: Replay, step: number, point: string): Frame {
@@ -163,6 +163,9 @@ export function tryMove(game: Replay, step: number, point: string): Frame {
 }
 function positionKey(board: Stone[]): string {
  return board.map(s => s ?? ".").join("");
+}
+export class IllegalMoveError extends Error {
+ constructor(public readonly reason: "occupied" | "suicide" | "ko", message:string) {super(message);}
 }
 function playOne(previous: Frame, point: string, positions: string[], seen: Set<string>): Frame {
  const color = previous.nextPlayer;
@@ -174,7 +177,7 @@ function playOne(previous: Frame, point: string, positions: string[], seen: Set<
  }
  if (!/^[a-s]{2}$/.test(point)) throw Error("不支持的落点");
  const p = (point.charCodeAt(1) - 97) * 19 + point.charCodeAt(0) - 97;
- if (board[p]) throw Error("非法落子：占点");
+ if (board[p]) throw new IllegalMoveError("occupied", "非法落子：占点");
  board[p] = color;
  for (const n of neighbors(p)) {
   if (board[n] && board[n] !== color) {
@@ -186,9 +189,9 @@ function playOne(previous: Frame, point: string, positions: string[], seen: Set<
    }
   }
  }
- if (!chain(board, p).hasLiberty) throw Error("非法落子：自杀");
+ if (!chain(board, p).hasLiberty) throw new IllegalMoveError("suicide", "非法落子：自杀");
  const position = positionKey(board);
- if (positions.length >= 2 && position === positions[positions.length - 2]) throw Error("非法落子：简单劫立即回提");
+ if (positions.length >= 2 && position === positions[positions.length - 2]) throw new IllegalMoveError("ko", "非法落子：简单劫立即回提");
  if (seen.has(position)) throw Error("暂不支持该循环规则：落子形成非立即历史盘面重复，不裁定合法性或无胜负");
  return frame;
 }

@@ -1,0 +1,7 @@
+{
+ "context":{"source":"force-d","rules":"Chinese","komi":7.5,"handicap":0,"initialPlayer":"B","black":["ca","bb","ac"],"white":["aa"],"moves":["B ba","W ss","B ab","W rr"]},
+ "candidates":[{"id":"force-aa","step":0,"player":"B","kind":"force","teaching":"ba","engine":"ab","evidence":[
+  {"move":"ba","targets":[{"stones":["aa"],"liberties":["ba","ab"]}],"captured":["aa"],"third":"ab"},
+  {"move":"ab","targets":[{"stones":["aa"],"liberties":["ba","ab"]}],"captured":["aa"],"third":"ba"}
+ ]}]
+}
