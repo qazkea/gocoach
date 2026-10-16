@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "dev": "npm run build:server && node .server/index.js",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outdir=.server",
+    "start": "node .server/index.js --production",
+    "build": "tsc --noEmit && vite build && npm run build:server",
     "typecheck": "tsc --noEmit",
     "test": "playwright test"
   },
@@ -14,10 +16,11 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "@playwright/test": "^1.56.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.0",
     "vite": "^7.1.0"
   }

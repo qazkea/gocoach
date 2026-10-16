@@ -1,7 +1,8 @@
-# 围棋赛后复盘 — 回放与受控局面教学
+# 围棋赛后复盘 — 回放、示例教学与本地引擎
 
 电脑浏览器手动读取已结束对局的完整 SGF，逐手查看实战棋盘与俘虏数。
-文件仅在本机处理；没有后端、账号、自动同步、真实引擎、在线 AI 或实时辅助。
+文件在浏览器读取；显式打开真实分析后，仅必要棋局经同源 HTTP 发送到同机回环 Node 服务。
+没有外部 AI、付费调用、账号、自动同步或实时辅助。名字、评论、原始 SGF 不进入分析请求。
 **教学仅为四份核验合成记录的预设示例分析，不是真实引擎/AI。尚未验证野狐导出兼容。任务验收由主代理另行组织。**
 
 ## 运行
@@ -22,6 +23,80 @@ Windows PowerShell 可使用 `npm.cmd` / `npx.cmd`。开发服务仅监听 `127.
 回放区域可聚焦；左右方向键前后浏览，Home/End 到起始/末尾。每个棋盘点提供
 SGF 坐标与黑/白/空的可访问名称（aa 左上，ss 右下，先列后行）。
 
+## 本地 KataGo（任务09，待主代理验收）
+
+`npm run dev` 使用单个 Node HTTP 服务（默认 `127.0.0.1:5173`）挂载 Vite；
+`npm run dev -- --port 5174` 可换端口。服务端更改须重启 dev，浏览器模块支持同源热更新。
+`npm run build` 构建浏览器 dist 与 esbuild Node ESM；`npm start -- --port 5173` 同源提供 dist。
+不能直接把 Vite 或 dist 静态预览当作完整引擎服务。仅使用 `http://127.0.0.1:端口`，严格 Host/Origin。
+
+引擎懒启动：仅回放、示例教学或读取 CSRF 令牌均不启动 GPU。任何符合条件的导入谱都可
+点击“打开本地真实引擎分析”，从当前回放步开始双方连续试下、Pass、撤回/重走、替换未来、回原局。
+原谱不改。换文件/回放步会关闭面板并取消；换分支清旧估值后等待。失败、无结果或 busy 可手动重试。
+关闭面板只取消其请求；服务退出才关闭自己的引擎，先关闭 stdin，3秒后必要时仅终止自己 spawn 的 PID。
+
+### 操作员本地配置（不要提交 Git）
+
+无需重新下载；本机授权资产在 `D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl`。
+本次留下 `web/operator.local.json`，使用已校验 exe/b18 与原 home 缓存，生成配置和诊断日志在 web 内。
+PowerShell：
+
+```powershell
+$env:GO_COACH_CONFIG='D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl/web/operator.local.json'
+npm.cmd run dev
+# 或 npm.cmd run build; npm.cmd start
+```
+
+其他路径的配置结构（全部由操作员设定，不接受 HTTP 提供路径或引擎 action）：
+
+```json
+{
+  "executable": "D:/local/katago/package/katago.exe",
+  "model": "D:/local/katago/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz",
+  "dataDir": "D:/local/katago/web",
+  "homeDataDir": "D:/local/katago/home"
+}
+```
+
+仅支持本票已核验的 v1.18.1 OpenCL；程序会调用 version 核对。缺配置时仍能回放并明确分析失败。
+请勿改用其他引擎/模型而沿用本票验收结论。服务没有下载器，不安装驱动或运行库。
+默认不记录完整请求/响应；`dataDir/engine-logs` 保留引擎运行诊断。
+**仅授权合成验收**可在单独配置加入 `"recordSyntheticEvidence": true` 留存完整棋局和响应日志；
+不要对私人棋谱启用。普通 `operator.local.json` 不启用；`web/synthetic-evidence.local.json` 仅供复现合成验收。
+
+### 条件、语义与限额
+
+- KM 必须为 [-400,400] 半整数。非空初盘缺 HA 拒绝估值（不妨碍回放）。HA0 或空盘缺 HA 补偿0。
+  HA≥2 只接受数量匹配的纯黑初盘和白先：Chinese 的 whiteHandicapBonus=N，Japanese 为0。
+- 显式近似 profile：SIMPLE ko，Chinese AREA/NONE tax，Japanese TERRITORY/SEKI tax，禁自杀；
+  不是完整中国/日本裁判规则，也不声称野狐完整认证。完整有序历史用于实际棋规与所有候选/PV验证。
+- 固定 BLACK 视角，正目差为黑领先。预算100 visits、cfg maxTime2秒，分析线程1/搜索线程2、batch2/cache18、PV15、无ownership。
+  实际 visits 照实显示，可能略超100。启动600秒与就绪查询30秒独立，不能将首次调优耗时当查询耗时。
+- 候选不等于全部合法手或最强证明，PV 是假设而非必然结局，估值不是棋理原因。
+  显示前10项，同时显示总数与未展示数；缺PV不补齐。未知循环只标不支持，不冒充非法着证明。
+- 64KiB 流式输入、最多2000帧、最多362候选、单条响应2MiB；任何坏候选/PV整次拒绝。
+  最多4个未收尾身份（含取消墓碑/待终止确认）；超出 busy，超时清理后可重试。
+- JSON + 随机 CSRF 令牌、同源 Origin/Host、无 CORS；没有 HTTP shell、路径、引擎 action、任意文件入口。
+  生产仅 dist 静态根；开发仅白名单浏览器模块、Vite依赖及公开示例资源，不公开 server/runtime/任务文档。
+
+### 验证边界
+
+`npm test` 保留原58条语义回归，新增测试通过真实浏览器/HTTP/规则/序列化，只将外部进程换成
+`tests/scripted-engine.mjs`。每测试独立进程/随机端口；页面标“可控测试引擎”，不是真实接入证据。
+测试进程入口 `GO_COACH_TEST_ENGINE` 仅由本机测试启动环境选择，不能由网页注入。
+
+真实浏览器验收为独立手动命令（先 build）：
+
+```powershell
+$env:GO_COACH_CONFIG='D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl/web/synthetic-evidence.local.json'
+$env:GO_COACH_EVIDENCE='D:/code/tmp/go-coach-runtime/katago-1.18.1-opencl/web/new-acceptance-directory'
+node tests/real-engine-browser.mjs
+```
+
+请用全新证据目录。只运行内置合成输入，不读取用户棋谱；完整日志/截图留本机，不进 Git。
+[09实施记录](.scratch/go-coach/09-implementation-log.md) 与
+[真实网页记录](.scratch/go-coach/09-browser-acceptance.md) 区分受控回归、真实运行、失败尝试及局限。
+
 ## 单局面教学（任务02）
 
 上传以下任一个完整样例，再点“进入核验教学局面”：
@@ -30,7 +105,7 @@ SGF 坐标与黑/白/空的可访问名称（aa 左上，ss 右下，先列后�
 
 分析只读取同源 `/analysis/corner-a.json` 或 `/analysis/corners-b.json`，请求只有公开示例ID，
 不发送上传SGF、名字或注释。名称/描述可不同，初盘/行棋方/完整序列/规则/贴目须匹配；
-其他文件仍可回放，不套固定答案。无后端、无付费调用。
+其他文件仍可回放，不套固定答案。此示例路径不调用本地引擎，无付费调用。
 
 等待结束后可点击棋盘先试一手、请求提示后继续、直接看答案，并切换实战/两种推荐。
 棋盘按钮提供坐标及颜色可访问名称，Tab 聚焦、Enter/空格落子。
@@ -39,7 +114,7 @@ SGF 坐标与黑/白/空的可访问名称（aa 左上，ss 右下，先列后�
 响应缺证据、位置冲突或失败时不呈现答案，可重试；切换局面/文件后不采用旧响应。
 
 B的预设排序不证明 rs 更强或 ab 更简单；不展示编造的胜率/目差。没有
-文字追问、练习、学习记录或真实AI集成。手算来源及全序列见
+文字追问、练习或学习记录；真实引擎使用下方独立入口，不冒充示例教学。手算来源及全序列见
 [02独立核验说明](tests/fixtures/guided-positions.md)，实际验证见
 [02实施记录](.scratch/go-coach/02-implementation-log.md)。
 
@@ -70,7 +145,7 @@ A/B旧资源仅在adapter归一化，随后与C/D共用真实棋规、目标证�
 换文件或请求后迟到结果不覆盖当前队列。新课程没有专门变化证据时显示暂无分析，可继续行棋。
 
 手算与输入格式见[04样例说明](tests/fixtures/selection.md)，实际验证见
-[04实施记录](.scratch/go-coach/04-implementation-log.md)。尚无真实引擎、AI、真人用时或教学成效证据。
+[04实施记录](.scratch/go-coach/04-implementation-log.md)。本节示例精选不使用真实引擎，无真人用时或教学成效证据。
 
 ## 连续变化探索（任务03）
 
