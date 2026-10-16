@@ -80,3 +80,22 @@ SGF解析与产品棋局校验分离；未支持属性/循环明确拒绝，不�
 
 未运行：真实野狐文件、完整中国/日本赛事规则程序、真实引擎/AI、真人教学效果、其他浏览器/移动设备。
 尚待主代理独立审查与集成后复测；不勾选验收、不将任务标done、不推送。
+
+## Standards 审查阶段：集中 SGF 属性描述
+
+- 隔离 worktree `pi-agent-dfc79643-9127-4c5-46d10a59`，起始 HEAD 为
+  `95d28611527e0e2b9debb0b5afb17b5a5933acbe`；基线祖先检查通过。
+- 仅在 `src/replay.ts` 集中私有属性描述表：分类、多值许可、文本转义许可。
+  parser 转义判断、game-info 节点识别、根位置、白名单及单值校验均读取该表。
+  保留 AP 转义冒号特别拒绝、原有 TM 等属性处理、公开 interface 及错误检查顺序；不扩展格式支持。
+- 这是 review 阶段维护重构，不虚构 RED；未修改任何测试或 expected。
+  浏览器上传 seam 继续运行真实解析/回放。
+- `npm.cmd ci`：通过，26 包，audit 0 漏洞；未改变依赖。
+- 重构前 `npm.cmd test`：20 passed（3.8秒），无失败或跳过。
+- 完成时 `git merge integration/go-coach`：Already up to date，集成 tip 仍为上述基线。
+- 合并检查后 `npm.cmd run typecheck`、`npm.cmd run build`：均通过。
+- 合并检查后 `npm.cmd test`：20 passed（3.7秒），无失败或跳过。
+- `git diff --check`：通过。
+
+未运行真实平台棋谱、其他浏览器、引擎或 AI；本次没有新增功能或验收状态变更。
+待主代理组织独立审查与整合，不推送或发布。

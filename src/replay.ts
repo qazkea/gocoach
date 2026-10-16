@@ -19,6 +19,59 @@ export interface Replay {
 }
 type Node = Record<string, string[]>;
 
+interface PropertyDescription {
+ category: "root" | "game-info" | "node";
+ allowsMultipleValues: boolean;
+ allowsTextEscapes: boolean;
+}
+const rootText: PropertyDescription = {category: "root", allowsMultipleValues: false, allowsTextEscapes: true};
+const gameInfoText: PropertyDescription = {category: "game-info", allowsMultipleValues: false, allowsTextEscapes: true};
+const nodeText: PropertyDescription = {category: "node", allowsMultipleValues: false, allowsTextEscapes: true};
+const rootValue: PropertyDescription = {...rootText, allowsTextEscapes: false};
+const gameInfoValue: PropertyDescription = {...gameInfoText, allowsTextEscapes: false};
+const nodeValue: PropertyDescription = {...nodeText, allowsTextEscapes: false};
+const setupPoints: PropertyDescription = {...nodeValue, allowsMultipleValues: true};
+// Presence is the supported-property whitelist. Keep classification, cardinality
+// and escape policy together; value-specific validation remains below.
+const propertyDescriptions: Partial<Record<string, PropertyDescription>> = {
+ FF: rootValue,
+ GM: rootValue,
+ SZ: rootValue,
+ CA: rootText,
+ AP: rootText,
+ ST: rootValue,
+ RU: gameInfoText,
+ KM: gameInfoValue,
+ HA: gameInfoValue,
+ RE: gameInfoText,
+ PB: gameInfoText,
+ PW: gameInfoText,
+ BR: gameInfoText,
+ WR: gameInfoText,
+ BT: gameInfoText,
+ WT: gameInfoText,
+ GN: gameInfoText,
+ GC: gameInfoText,
+ DT: gameInfoText,
+ EV: gameInfoText,
+ RO: gameInfoText,
+ PC: gameInfoText,
+ SO: gameInfoText,
+ US: gameInfoText,
+ AN: gameInfoText,
+ ON: gameInfoText,
+ TM: gameInfoValue,
+ OT: gameInfoText,
+ B: nodeValue,
+ W: nodeValue,
+ PL: nodeValue,
+ AB: setupPoints,
+ AW: setupPoints,
+ AE: setupPoints,
+ C: nodeText,
+ N: nodeText,
+};
+
 // Strict single-sequence reader: never repairs syntax or discards a second tree.
 function parse(text: string): Node[] {
  let i = 0;
@@ -49,7 +102,7 @@ function parse(text: string): Node[] {
      let c = text[i++];
      if (c === "\\") {
       if (i === text.length) throw Error("SGF 转义不完整");
-      if (["B", "W", "AB", "AW", "AE", "PL", "HA", "KM", "FF", "GM", "SZ", "ST", "TM"].includes(key)) {
+      if (propertyDescriptions[key]?.allowsTextEscapes === false) {
        throw Error(`属性 ${key} 不支持文本转义`);
       }
       c = text[i++];
@@ -125,8 +178,7 @@ export function importReplay(bytes: ArrayBuffer): Replay {
  if (root.SZ && root.SZ[0] !== "19") throw Error("仅支持 19 路棋盘");
  if (root.ST && !/^[0-3]$/.test(root.ST[0])) throw Error("ST 必须为 0—3");
  if (root.AP && !/^[^:]+:[^:]*$/.test(root.AP[0])) throw Error("AP 需为 应用名:版本；暂不支持字段内冒号");
- const infoKeys = new Set("RU KM HA RE PB PW BR WR BT WT GN GC DT EV RO PC SO US AN ON TM OT".split(" "));
- const infoNodes = nodes.filter(n => Object.keys(n).some(k => infoKeys.has(k)));
+ const infoNodes = nodes.filter(node => Object.keys(node).some(key => propertyDescriptions[key]?.category === "game-info"));
  if (infoNodes.length > 1) throw Error("同一路径出现多个棋局信息节点");
  const info = infoNodes[0];
  if (!info?.RU?.[0] || !info?.KM?.[0]) throw Error("规则 RU 或贴目 KM 未确定，请补齐后重新上传");
@@ -136,13 +188,12 @@ export function importReplay(bytes: ArrayBuffer): Replay {
  if (!["Chinese", "Japanese"].includes(info.RU[0])) throw Error("暂不支持该规则记录；仅支持 Chinese / Japanese 基础回放校验");
  if (info.HA && (!/^\d+$/.test(info.HA[0]) || Number(info.HA[0]) === 1 || Number(info.HA[0]) > 361)) throw Error("让子 HA 必须为 0 或 2—361 的整数");
  let moved = false;
- const rootKeys = ["FF", "GM", "SZ", "CA", "AP", "ST"];
- const supported = new Set([...infoKeys, ...rootKeys, "B", "W", "PL", "AB", "AW", "AE", "C", "N"]);
  for (const [index, node] of nodes.entries()) {
   for (const key of Object.keys(node)) {
-   if (!supported.has(key)) throw Error(`暂不支持属性 ${key}，未导入棋局`);
-   if (!["AB", "AW", "AE"].includes(key) && node[key].length !== 1) throw Error("单值属性含多个值");
-   if (index > 0 && rootKeys.includes(key)) throw Error("根属性出现在非根节点");
+   const description = propertyDescriptions[key];
+   if (!description) throw Error(`暂不支持属性 ${key}，未导入棋局`);
+   if (!description.allowsMultipleValues && node[key].length !== 1) throw Error("单值属性含多个值");
+   if (index > 0 && description.category === "root") throw Error("根属性出现在非根节点");
   }
   if (node.PL && !["B", "W"].includes(node.PL[0])) throw Error("PL 行棋方必须是 B 或 W");
   if (node.B && node.W) throw Error("同节点不能同时有黑白落子");
