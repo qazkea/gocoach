@@ -10,7 +10,7 @@
 
 **Status:** ready-for-agent
 
-**Execution:** pending
+**Execution:** blocked
 
 ## Acceptance criteria
 
@@ -41,3 +41,8 @@
 只修复授权样本暴露的导入兼容，不新增自动连接、同步或其他平台支持；历史官方直播说明不能证明当前自局导出，未核验也不等于不支持。 本次只创建任务文档，不授权实施、安装、外发、付费、提交或发布。
 
 Spec coverage: User Stories 3, 4, 5, 6.
+
+## Comments
+
+- 01已在集成分支验收完成，任务编号依赖已解除；目前仍缺用户授权的真实野狐自己对局SGF与当前版本导出证据，Execution设为blocked（外部前提）。
+- 尚未取得样本使用、留存与回归用途的授权，不自行读取个人文件或安装客户端。标准SGF和教学流程继续推进，不据合成样例宣称野狐兼容。
