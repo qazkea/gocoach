@@ -1,0 +1,1 @@
+{"position":"corners-b","teaching":"ab","engine":"rs","evidence":[{"move":"ab","target":"aa","liberties":["ab"],"captured":["aa"]},{"move":"rs","target":"ss","liberties":["rs"],"captured":["ss"]}]}

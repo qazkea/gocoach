@@ -2,6 +2,8 @@ import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { importReplay, MAX_FILE_BYTES, type Replay } from "./replay";
 import "./style.css";
+import {matchExample} from "./teaching";
+import {Teaching} from "./TeachingPanel";
 
 function App() {
   const [game, setGame] = useState<Replay>();
@@ -10,6 +12,7 @@ function App() {
   const [error, setError] = useState("");
   const request = useRef(0);
   const frame = game?.frames[step];
+  const example = game && matchExample(game);
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -60,6 +63,10 @@ function App() {
       <p>规则记录：{game.rules}；贴目：{game.komi}；结果记录：{game.result}；编码：{game.encoding}；让子记录：{game.handicap}</p>
       <p>结果来自文件，不自动判断真实对局是否结束或计算胜负。让子数不自动摆子，初始局面以 setup 记录为准。</p>
     </section>}
+    <p>示例分析：预设数据，非真实引擎或在线AI。仅两份合成记录可用，不代表真实棋力评估。</p>
+    {game && !example && <p>当前没有对应示例分析；仍可回放。</p>}
+    {game && example && <button onClick={() => setStep(example.step)}>进入核验教学局面</button>}
+    {game && example && step === example.step && <Teaching key={request.current + ":" + step} game={game} example={example} />}
     {game && frame && <section aria-label="棋谱回放" tabIndex={0} onKeyDown={navigate}>
       <p>第 {step} / {game.frames.length - 1} 手：{frame.move}</p>
       <p>黑提子：{frame.blackCaptures}；白提子：{frame.whiteCaptures}</p>

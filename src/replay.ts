@@ -6,6 +6,7 @@ export interface Frame {
  move: string;
  blackCaptures: number;
  whiteCaptures: number;
+ nextPlayer: "B" | "W";
 }
 export interface Replay {
  frames: Frame[];
@@ -137,14 +138,59 @@ function neighbors(p: number): number[] {
 }
 function chain(board: Stone[], start: number) {
  const stones = new Set<number>([start]);
- let hasLiberty = false;
+ const liberties = new Set<number>();
  for (const p of stones) {
   for (const n of neighbors(p)) {
-   if (board[n] === null) hasLiberty = true;
+   if (board[n] === null) liberties.add(n);
    else if (board[n] === board[start]) stones.add(n);
   }
  }
- return {stones, hasLiberty};
+ return {stones, liberties, hasLiberty: liberties.size > 0};
+}
+export function groupAt(frame: Frame, point: string): {color: Stone; stones: string[]; liberties: string[]} {
+ if (!/^[a-s]{2}$/.test(point)) throw Error("不支持的落点");
+ const p = (point.charCodeAt(1) - 97) * 19 + point.charCodeAt(0) - 97;
+ const coord = (i: number) => String.fromCharCode(97 + i % 19) + String.fromCharCode(97 + Math.floor(i / 19));
+ if (!frame.board[p]) return {color: null, stones: [], liberties: []};
+ const group = chain(frame.board, p);
+ return {color: frame.board[p], stones: [...group.stones].map(coord), liberties: [...group.liberties].map(coord)};
+}
+// One move from an imported history; never mutates the original replay.
+export function tryMove(game: Replay, step: number, point: string): Frame {
+ if (!Number.isInteger(step) || step < 0 || step >= game.frames.length) throw Error("局面不存在");
+ const positions = game.frames.slice(0, step + 1).map(frame => positionKey(frame.board));
+ return playOne(game.frames[step], point, positions, new Set(positions));
+}
+function positionKey(board: Stone[]): string {
+ return board.map(s => s ?? ".").join("");
+}
+function playOne(previous: Frame, point: string, positions: string[], seen: Set<string>): Frame {
+ const color = previous.nextPlayer;
+ const frame: Frame = {...previous, board: [...previous.board], nextPlayer: color === "B" ? "W" : "B", move: color + " " + point};
+ const board = frame.board;
+ if (point === "" || point === "tt") {
+  frame.move = color + " pass";
+  return frame;
+ }
+ if (!/^[a-s]{2}$/.test(point)) throw Error("不支持的落点");
+ const p = (point.charCodeAt(1) - 97) * 19 + point.charCodeAt(0) - 97;
+ if (board[p]) throw Error("非法落子：占点");
+ board[p] = color;
+ for (const n of neighbors(p)) {
+  if (board[n] && board[n] !== color) {
+   const group = chain(board, n);
+   if (!group.hasLiberty) {
+    for (const captured of group.stones) board[captured] = null;
+    if (color === "B") frame.blackCaptures += group.stones.size;
+    else frame.whiteCaptures += group.stones.size;
+   }
+  }
+ }
+ if (!chain(board, p).hasLiberty) throw Error("非法落子：自杀");
+ const position = positionKey(board);
+ if (positions.length >= 2 && position === positions[positions.length - 2]) throw Error("非法落子：简单劫立即回提");
+ if (seen.has(position)) throw Error("暂不支持该循环规则：落子形成非立即历史盘面重复，不裁定合法性或无胜负");
+ return frame;
 }
 export function importReplay(bytes: ArrayBuffer): Replay {
  if (bytes.byteLength > MAX_FILE_BYTES) throw Error("文件超过 1 MiB 上限");
@@ -229,44 +275,18 @@ export function importReplay(bytes: ArrayBuffer): Replay {
  for (let p = 0; p < 361; p++) {
   if (board[p] && !chain(board, p).hasLiberty) throw Error("初始 setup 存在无气棋子");
  }
- const frames: Frame[] = [{board: [...board], move: "起始", blackCaptures: 0, whiteCaptures: 0}];
- const positionKey = () => board.map(s => s ?? ".").join("");
- const positions = [positionKey()];
+ const frames: Frame[] = [{board: [...board], move: "起始", blackCaptures: 0, whiteCaptures: 0, nextPlayer: next}];
+ const positions = [positionKey(board)];
  const seen = new Set(positions);
- let blackCaptures = 0;
- let whiteCaptures = 0;
  for (const node of nodes) {
   const color = node.B ? "B" : node.W ? "W" : undefined;
   if (!color) continue;
-  if (color !== next) throw Error("行棋方不符合交替落子记录");
-  next = color === "B" ? "W" : "B";
-  const point = node[color][0];
-  if (point === "" || point === "tt") {
-   frames.push({board: [...board], move: color + " pass", blackCaptures, whiteCaptures});
-   positions.push(positionKey());
-   continue;
-  }
-  if (!/^[a-s]{2}$/.test(point)) throw Error("不支持的落点");
-  const p = (point.charCodeAt(1) - 97) * 19 + point.charCodeAt(0) - 97;
-  if (board[p]) throw Error("非法落子：占点");
-  board[p] = color;
-  for (const n of neighbors(p)) {
-   if (board[n] && board[n] !== color) {
-    const group = chain(board, n);
-    if (!group.hasLiberty) {
-     for (const captured of group.stones) board[captured] = null;
-     if (color === "B") blackCaptures += group.stones.size;
-     else whiteCaptures += group.stones.size;
-    }
-   }
-  }
-  if (!chain(board, p).hasLiberty) throw Error("非法落子：自杀");
-  const position = positionKey();
-  if (positions.length >= 2 && position === positions[positions.length - 2]) throw Error("非法落子：简单劫立即回提");
-  if (seen.has(position)) throw Error("暂不支持该循环规则：落子形成非立即历史盘面重复，不裁定合法性或无胜负");
-  seen.add(position);
+  if (color !== frames[frames.length - 1].nextPlayer) throw Error("行棋方不符合交替落子记录");
+  const frame = playOne(frames[frames.length - 1], node[color][0], positions, seen);
+  frames.push(frame);
+  const position = positionKey(frame.board);
   positions.push(position);
-  frames.push({board: [...board], move: color+" "+point, blackCaptures, whiteCaptures});
+  seen.add(position);
  }
  return {
   frames,
