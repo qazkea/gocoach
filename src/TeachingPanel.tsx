@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import {VariationPanel} from "./VariationPanel";
 import {analyze, attempt, evidenceText, type Example, type Analysis} from "./teaching";
 import {type Frame, type Replay} from "./replay";
 type TeachingMode = "initial" | "trial" | "actual" | "teaching" | "engine";
@@ -10,6 +11,7 @@ const modeLabels: Record<TeachingMode, string> = {
  engine: "模拟引擎首选",
 };
 export function Teaching({game, example}: {game: Replay; example: Example}) {
+ const [exploring, setExploring] = useState(false);
  const [state, setState] = useState("分析中…");
  const [retry, setRetry] = useState(0);
  const [trial, setTrial] = useState<Frame>();
@@ -33,6 +35,7 @@ export function Teaching({game, example}: {game: Replay; example: Example}) {
   }
   catch(error) {setFeedback(error instanceof Error ? error.message : "试下失败");}
  }
+ if (exploring) return <VariationPanel game={game} example={example} onExit={() => {setExploring(false); setTrial(game.frames[example.step + 1]); setMode("actual"); setAnswer(false); setHint(false); setFeedback("");}} />;
  return <section aria-label="局面教学">
   <h2>局面教学</h2>
   <p>示例分析：预设数据，非真实引擎或在线AI</p>
@@ -43,6 +46,7 @@ export function Teaching({game, example}: {game: Replay; example: Example}) {
    <p>第 {example.step} 手后，轮黑；模式：{modeLabels[mode]}</p>
    <p>每次点击都从原局面重新试一手，不在结果盘继续行棋。坐标 aa 左上、ss 右下，先列后行。</p>
    <p>目标：提走左上角白 aa。黑提子：{frame.blackCaptures}；白提子：{frame.whiteCaptures}</p>
+   <button onClick={() => setExploring(true)}>探索连续变化</button>
    <button onClick={() => setHint(true)}>请求提示</button>
    <button onClick={() => {setAnswer(true); play(analysis!.teaching, "teaching");}}>直接看答案</button>
    {answer && <div>
