@@ -26,14 +26,14 @@
 - SGF/GTP转换：aa=A19、ba=B19、ab=A18、dd=D16、ss=T1，GTP跳I列，pass正确转换。原局未来不得混入变化。
 - 引擎估值比回放更严格：KM为[-400,400]半整数；不满足则仅拒绝分析、保留回放。映射Chinese/Japanese到KataGo近似计算profile，明确展示SIMPLE ko及AREA/TERRITORY等，不称已核验野狐完整规则。
 - 防止setup被自动推断为让子：HA缺失且初盘非空暂拒绝真实估值并说明；HA[0]以及HA缺失的空盘使用whiteHandicapBonus=0。HA≥2仅支持初盘全黑、数量等于HA且白先，Chinese补偿N、Japanese补偿0。矛盾条件不自动修补；已有回放与预设教学能力不因此收紧。HA0 setup另提供合成验收样例。
-- 出口必须显式initialStones/initialPlayer/rules/komi/whiteHandicapBonus/19×19/完整moves/maxVisits。固定reportAnalysisWinratesAs=BLACK，100visits、cfg maxTime=2秒、单分析线程、搜索线程2、batch2/cache18、PV长度15、ownership关闭。实际visits可能有线程超额，照实报告，不承诺精确等于100。
+- 出口必须显式initialStones/initialPlayer/rules/komi/whiteHandicapBonus/19×19/完整moves/maxVisits。固定reportAnalysisWinratesAs=BLACK，100visits、cfg maxTime=2秒、单分析线程、搜索线程2、batch2/cache18、analysisPVLen=15、ownership关闭。该配置不含候选首着，所以返回PV数组最多16着（首着＋最多15着后续），显示与校验必须一致。实际visits可能有线程超额，照实报告，不承诺精确等于100。
 
 ## 协议、资源与安全
 
 - 懒启动一个自有KataGo子进程。版本/配置与实际运行相符；启动调优单独状态与600秒期限，就绪后每查询外层30秒期限。启动失败可以显式重试，不自动循环重启。
 - 请求生成服务端ID，绑定子进程代次、完整输入上下文、预期turnNumber及当前轮次。不同文件、分支、重试不得复用旧响应。只接受相应最终结果，不把中途结果或terminate确认当成分析成功。
 - warning（包括未知参数、规则转换）、error、崩溃、超时、错误身份/轮次、非法数值或非法候选/PV均不能冒充成功。主代理选择保守整次拒绝策略：有无效候选/PV就明确本次未完成，不静默删除后声称全部可靠；合法候选没有PV则明确缺少该变化。
-- 候选和每条PV继续复用真实规则/完整历史验证；未知循环属于未支持，不当非法应手或确定结论。对返回量设置有界上限（最多362候选、受配置约束的PV长度、单行JSON最多2MiB），不截断后伪装完整。
+- 候选和每条PV继续复用真实规则/完整历史验证；未知循环属于未支持，不当非法应手或确定结论。对返回量设置有界上限（最多362候选、PV数组最多16着、单行JSON最多2MiB），不截断后伪装完整。
 - HTTP断开/切分支先把请求标为失效，再发仅对应id的terminate；保留取消墓碑直到引擎最终回复或进程重启，丢弃任何迟到的局部结果。不同标签页只取消自己的请求。最多4条未完成引擎请求（含排队及取消未收尾），超出明确busy，可手动重试；不无界积压。
 - 关闭服务器或显式停止时关闭stdin并等待，只在期限后终止自己spawn的进程。解析器、定时器、监听器和pending状态均须收尾。不得杀其他用户进程。
 - 严格Host与同源Origin检查；修改性请求要求JSON和进程随机CSRF令牌，不开放CORS。令牌仅经受保护的同源读取获得；该读取不启动引擎。没有任意文件读写/执行/外部URL转发入口。静态文件服务防路径越界，不把runtime或源码目录暴露为静态根。

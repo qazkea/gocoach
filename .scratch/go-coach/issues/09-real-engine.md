@@ -71,3 +71,11 @@ Spec coverage: User Stories 6, 18, 27, 28, 29, 30.
 - 计算使用显式KataGo近似profile、黑方视角、小预算；不满足半整数贴目或初盘/HA一致性条件时只拒绝估值，不削弱回放。HA不明的非空setup不自动猜测补偿。
 - 选择有界并发（最多4未收尾请求）、失效/取消隔离、无效候选或PV整次拒绝；缺PV如实保留。exe/配置不从HTTP输入，同源与CSRF校验，64KiB请求上限，无个人字段/SGF外发。
 - 接续既有本地实施与合成试跑授权，使用已校验资产完成少量真实浏览器原局/分支、白轮、规则/HA/劫历史及重复稳定性验证；不增加引擎/模型/依赖运行库下载，不调用在线AI。
+
+### 网页候选复测与审查待修
+
+- 候选fea729c已整合。主代理实际npm ci、typecheck、build、全部86条浏览器测试通过（旧58＋新28），无跳过，git diff --check通过。实现代理已记录14次真实浏览器合成分析；主代理真实网页复跑在修复后进行，不将代理记录当作自己已运行。
+- Spec确认1项P2：stdin管道错误但引擎仍活着时，fail后重试可能覆盖旧进程引用。Standards也确认该问题，另确认测试fixture启动等待在finally外，超时可能遗留服务及临时目录。两者已委派隔离修复与实际故障回归；真实浏览器验收脚本的同类退出路径也需检查。
+- 主代理另核对v1.18.1官方Analysis_Engine.md及cpp/search/searchresults.cpp：analysisPVLen=15不含首着，实际PV数组可为16着。当前>15拒绝和界面最多15的表述有off-by-one，已纳入修复：保持配置深度15，允许16着、拒绝17着，并用两条均合法的独立序列测试长度边界。09-design已澄清，不改变搜索预算。
+- 官方核对依据：https://raw.githubusercontent.com/lightvector/KataGo/v1.18.1/docs/Analysis_Engine.md 与 https://raw.githubusercontent.com/lightvector/KataGo/v1.18.1/cpp/search/searchresults.cpp （先push候选首着，再追加至maxDepth，最后输出整个PV）。
+- 仍待修复复审、主代理完整回归及真实浏览器复测，Execution保持in-progress。
