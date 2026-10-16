@@ -57,3 +57,13 @@ GREEN累计使用 `npx.cmd playwright test tests/guided.spec.ts --workers=1`。
 
 没有运行真实引擎、在线AI、付费服务或私人棋谱；没有教学效果/学习迁移、野狐兼容、生产性能证明。
 未实现03多手变化、整盘精选、文字追问、练习、学习记录、后台。任务状态与checkbox未改，完成由主代理决定。
+
+## Standards 审查小重构：显示模式与行为解耦
+
+- 在独立 worktree `C:/Users/789/AppData/Local/Temp/pi-agent-be385c70-e215-4ba-f59b5f0b`，基于已确认祖先 `fd1e343739507fb0b3dde5343b8fd86713ec6694` 实施；未 reset 或修改主工作区。
+- 仅修改 `src/TeachingPanel.tsx` 和本记录。新增小型 `TeachingMode` 联合类型与 `modeLabels` 文案映射；状态和按钮使用模式值，`play` 以显式模式而非展示文案决定是否显示答案。初始模式不能作为落子模式传入。
+- 保留全部显示文案、试下成功/失败、直接答案及重置语义；不改分析状态，不扩展整体状态机，不修改测试或 expectation。
+- 这是审查阶段重构，复用已确认的浏览器 seam：改动前 `npm.cmd test` 为 **31 passed**，改动后同命令仍为 **31 passed**，没有失败或跳过；不宣称新增 RED。
+- `npm.cmd ci` 成功（0 vulnerabilities）；`npm.cmd run typecheck`、`npm.cmd run build`（31 modules）、`git diff --check` 均通过。
+- 提交前执行 `git merge integration/go-coach`，最新 tip 仍为 `fd1e343739507fb0b3dde5343b8fd86713ec6694`，结果 Already up to date。
+- 未推送、调度子代理或更改任务完成状态；交主代理独立审查验收。
