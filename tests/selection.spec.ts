@@ -178,9 +178,10 @@ test('强制证明预算耗尽说明未完整核验，重复目标不凑数', as
 });
 test('C/D公开源出口不含私密信息，改动真实setup的反例是未知谱而非套题', async ({page}) => {
  await page.goto('/');
+ const origin=new URL(page.url()).origin;
  const outbound:{url:string;method:string;body:string|null}[]=[];
- const allowed=['http://127.0.0.1:5173/analysis/mixed-c.json','http://127.0.0.1:5173/analysis/force-d.json'];
- await page.route('**/*',route=>{const r=route.request(); outbound.push({url:r.url(),method:r.method(),body:r.postData()}); return allowed.includes(r.url()) ? route.continue() : route.abort();});
+ const allowed=[origin+'/analysis/mixed-c.json',origin+'/analysis/force-d.json'];
+ await page.route('**/*',route=>{const r=route.request(); if(r.url()===origin+'/api/engine-capability'&&r.method()==='GET'&&r.postData()===null)return route.continue(); outbound.push({url:r.url(),method:r.method(),body:r.postData()}); return allowed.includes(r.url()) ? route.continue() : route.abort();});
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'私人名字.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(c.replace('RE[B+R]','RE[B+R]PB[私人昵称]PW[私人对手]C[私人评论]'))});
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 3 个');
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-force.sgf');

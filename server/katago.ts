@@ -12,6 +12,7 @@ export class KataGo {
  private acknowledgements=new Map<string,{target:string;timer:NodeJS.Timeout}>();
  private ready=false;
  private generation=0;
+ private readonly serviceInstance=randomUUID();
  private startup?:NodeJS.Timeout;
  private starting=false;
  private engine='';
@@ -146,7 +147,7 @@ export class KataGo {
   try {
    if(v.noResults===true) throw Error('noResults：引擎没有结果');
    if(v.isDuringSearch!==false && v.warning===undefined && v.error===undefined) throw Error('引擎最终响应身份不符');
-   p.resolve(result(v,p.position,this.engine,this.model));
+   p.resolve({...result(v,p.position,this.engine,this.model),engineSession:this.serviceInstance+':'+this.generation});
   } catch(e) {p.reject(e instanceof Error?e:Error('引擎响应无效'));}
  }
  private fail(error:Error) {

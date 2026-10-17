@@ -9,17 +9,20 @@ async function enter(page: Page, file = 'manual-finished.sgf') {
 async function play(page: Page, point: string) {
  await variation(page).getByRole('button',{name:point + ' 空',exact:true}).click();
 }
-test('变化出口只请求同源公开示例资源，不发送私密棋谱字段', async ({page}) => {
+test('变化出口只请求同源公开示例资源，不发送私密棋谱字段', async ({page,baseURL}) => {
+ const origin=new URL(baseURL!).origin;
  const requests: {url:string; method:string; body:string|null}[] = [];
  const unexpectedSockets: string[] = [];
  page.on('websocket', socket => {
-  if (!socket.url().startsWith('ws://127.0.0.1:5173/')) unexpectedSockets.push(socket.url());
+  if (new URL(socket.url()).origin!==origin.replace('http:','ws:')) unexpectedSockets.push(socket.url());
   socket.on('framesent', frame => {if (String(frame.payload) !== '{"type":"ping"}') unexpectedSockets.push(String(frame.payload));});
  });
  await page.goto('/');
- const allowed = ['corner-a.json','variations/corner-a/start.json','variations/corner-a/dd.json','variations/corner-a/dd-ab.json'].map(p => 'http://127.0.0.1:5173/analysis/' + p);
+ const allowed = ['corner-a.json','variations/corner-a/start.json','variations/corner-a/dd.json','variations/corner-a/dd-ab.json'].map(p => origin+'/analysis/' + p);
  await page.route('**/*', route => {
-  const r = route.request(); requests.push({url:r.url(),method:r.method(),body:r.postData()});
+  const r = route.request();
+  if(r.url()===origin+'/api/engine-capability'&&r.method()==='GET'&&r.postData()===null)return route.continue();
+  requests.push({url:r.url(),method:r.method(),body:r.postData()});
   return allowed.includes(r.url()) ? route.continue() : route.abort();
  });
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'私人文件.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]GM[1]SZ[19]CA[UTF-8]RU[Chinese]KM[7.5]RE[W+R]PB[私人名字]PW[私人对手]C[私人评论];B[ba];W[aa];B[ab];W[ss])')});

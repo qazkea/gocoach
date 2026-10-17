@@ -52,16 +52,19 @@ test('换文件或离开再进入局面时，迟到成功和失败不覆盖当�
 });
 test('请求仅含公开示例ID，名字注释不影响匹配也不外发', async ({page}) => {
  await page.goto('/');
+ const origin=new URL(page.url()).origin;
  const outbound: {url:string;method:string;body:string|null}[] = [];
  await page.route('**/*',route => {
-  const r = route.request(); outbound.push({url:r.url(),method:r.method(),body:r.postData()});
-  return r.url() === 'http://127.0.0.1:5173/analysis/corner-a.json' ? route.continue() : route.abort();
+  const r = route.request();
+  if(r.url()===origin+'/api/engine-capability'&&r.method()==='GET'&&r.postData()===null)return route.continue();
+  outbound.push({url:r.url(),method:r.method(),body:r.postData()});
+  return r.url() === origin+'/analysis/corner-a.json' ? route.continue() : route.abort();
  });
  await upload(page,a.replace('RE[W+R]','RE[W+R]PB[私人名字]PW[私人对手]C[私人说明]'));
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await lesson(page).getByRole('button',{name:'直接看答案'}).click();
  await expect(lesson(page)).toContainText('两类推荐相同');
- expect(outbound).toEqual([{url:'http://127.0.0.1:5173/analysis/corner-a.json',method:'GET',body:null}]);
+ expect(outbound).toEqual([{url:origin+'/analysis/corner-a.json',method:'GET',body:null}]);
 });
 test('分析请求失败明确未完成并可重试', async ({page}) => {
  await page.route('**/analysis/corner-a.json',route => route.fulfill({status:503,body:'unavailable'}));

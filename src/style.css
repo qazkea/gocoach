@@ -4,6 +4,11 @@ button,input{font:inherit}
 button{margin:0 8px 16px 0;padding:8px 16px}
 button:focus-visible,input:focus-visible{outline:3px solid #126c9c}
 [role=alert]{color:#a42219}
+.full-game{margin:24px 0;padding:16px;border:1px solid #c4c7bc;border-radius:8px;background:#fffdf6;overflow-wrap:anywhere}
+.full-game button[aria-current=step]{outline:2px solid #126c9c;background:#e5f0f3}
+.full-game ol[aria-label]{padding-left:28px}
+.full-game ol[aria-label] button{margin-bottom:6px}
+main>label{display:block;margin:12px 0}
 
 .board{
  position:relative; width:min(100%,630px); aspect-ratio:1; margin:16px 0 24px; container-type:inline-size;

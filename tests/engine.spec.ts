@@ -226,6 +226,7 @@ test.describe('waiting',()=>{
   await page.getByRole('button',{name:'下一手',exact:true}).click();
   await expect(panel(page)).toHaveCount(0);
   await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();await expect(panel(page)).toContainText('分析中（查询');
+  await page.getByLabel('导入后自动整局扫描').uncheck();
   await page.getByLabel('选择 SGF 文件').setInputFiles({name:'new.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Japanese]KM[6.5];B[pp])')});
   await expect(panel(page)).toHaveCount(0);
   await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();await expect(panel(page)).toContainText('分析中（查询');
@@ -237,6 +238,7 @@ test.describe('waiting',()=>{
 const panel=(page:Page)=>page.getByRole('region',{name:'本地引擎分析'});
 async function open(page:Page,url:string,sgf='(;FF[4]RU[Chinese]KM[7.5];B[ba];W[aa];B[ab];W[ss])',end=false) {
  await page.goto(url);
+ await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(sgf)});
  if(end)await page.getByRole('button',{name:'末尾',exact:true}).click();
  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
@@ -251,6 +253,7 @@ test.describe('duplicate',()=>{
 });
 test('非示例谱显式打开本地引擎后展示黑方估值与分析条件', async ({page,engineServer}) => {
  await page.goto(engineServer.url);
+ await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5]PB[private-name]C[private-comment];B[dd];W[pp])')});
  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
  const panel=page.getByRole('region',{name:'本地引擎分析'});
@@ -261,6 +264,7 @@ test('非示例谱显式打开本地引擎后展示黑方估值与分析条件',
 });
 test('必要历史和官方显式计算profile经进程出口传递且无身份字段', async ({page,engineServer}) => {
  await page.goto(engineServer.url);
+ await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'private.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Japanese]KM[6.5]PB[private-name]C[private-comment];B[ba];W[aa];B[ab];W[ss])')});
  await page.getByRole('button',{name:'下一手',exact:true}).click();
  await page.getByRole('button',{name:'下一手',exact:true}).click();

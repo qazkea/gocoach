@@ -3,6 +3,7 @@ import {mkdir} from 'node:fs/promises';
 
 test('可控引擎棋盘黑白焦点预览不分析不改状态，落子与pass撤回重走保留最近手', async ({page,engineServer}) => {
  await page.goto(engineServer.url);
+ await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'visual.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5];B[dd];W[pp])')});
  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
  const panel = page.getByRole('region',{name:'本地引擎分析'});

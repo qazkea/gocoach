@@ -118,19 +118,21 @@ test("界面说明有限支持且键盘可导航", async ({page}) => {
  await page.keyboard.press("Home");
  await expect(page.getByRole("img",{name:"dd 空",exact:true})).toBeVisible();
 });
-test("迟到文件读取成功或失败不污染新棋局且无文件外发", async ({page}) => {
+test("迟到文件读取成功或失败不污染新棋局且无文件外发", async ({page,baseURL}) => {
+ const origin=new URL(baseURL!).origin;
  const outbound: string[] = [];
  let loaded = false;
  await page.route("**/*", route => {
   const request = route.request();
-  if (loaded || !request.url().startsWith("http://127.0.0.1:5173/") || request.method() !== "GET" || request.postData()) {
+  const capability=request.url()===origin+"/api/engine-capability" && request.method()==="GET" && request.postData()===null;
+  if ((loaded&&!capability) || new URL(request.url()).origin!==origin || request.method() !== "GET" || request.postData()) {
    outbound.push(request.url());
    return route.abort();
   }
   return route.continue();
  });
  page.on("websocket", socket => {
-  if (!socket.url().startsWith("ws://127.0.0.1:5173/")) outbound.push(socket.url());
+  if (new URL(socket.url()).origin!==origin.replace("http:","ws:")) outbound.push(socket.url());
   socket.on("framesent", frame => {
    if (String(frame.payload) !== '{"type":"ping"}') outbound.push(String(frame.payload));
   });

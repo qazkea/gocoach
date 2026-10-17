@@ -22,6 +22,7 @@ const server=createServer(async(req,res)=>{
  if(req.headers.host!==origin.slice(7) || (req.headers.origin!==undefined&&req.headers.origin!==origin) || req.headers['sec-fetch-site']==='cross-site') {json(403,{error:'来源拒绝'});return;}
  const pathname=new URL(req.url??'/',origin).pathname;
  if(pathname.startsWith('/api/')) {
+  if(pathname==='/api/engine-capability'&&req.method==='GET') {json(200,{configured:!!(process.env.GO_COACH_CONFIG||process.env.GO_COACH_TEST_ENGINE)});return;}
   if(pathname==='/api/token'&&req.method==='GET') {json(200,{token});return;}
   if(pathname!=='/api/analyze'||req.method!=='POST') {json(404,{error:'不存在'});return;}
   if(req.headers.origin!==origin || req.headers['x-csrf-token']!==token || req.headers['content-type']!=='application/json') {json(403,{error:'需要同源 JSON 与 CSRF 令牌'});return;}
@@ -42,7 +43,7 @@ const server=createServer(async(req,res)=>{
  if(req.method!=='GET'&&req.method!=='HEAD') {json(405,{error:'方法拒绝'});return;}
  if(vite) {
   // Vite transforms browser sources, but is not a general workspace file server.
-  const browserFiles=['main.tsx','replay.ts','teaching.ts','TeachingPanel.tsx','variation.ts','variationAnalysis.ts','VariationPanel.tsx','engine.ts','EnginePanel.tsx','GoBoard.tsx','style.css'];
+  const browserFiles=['main.tsx','replay.ts','teaching.ts','TeachingPanel.tsx','variation.ts','variationAnalysis.ts','VariationPanel.tsx','engine.ts','EnginePanel.tsx','FullGameReview.tsx','analyze.ts','GoBoard.tsx','style.css'];
   const allowed=pathname==='/'||pathname==='/index.html'||pathname==='/@vite/client'||pathname==='/node_modules/vite/dist/client/env.mjs'||browserFiles.some(f=>pathname==='/src/'+f)||/^\/node_modules\/\.vite\/deps\/[a-zA-Z0-9_.-]+\.(js|map)$/.test(pathname)||/^\/analysis\/(?:variations\/corner-a\/)?[a-zA-Z0-9-]+\.json$/.test(pathname);
   if(!allowed) {json(404,{error:'不存在'});return;}
   vite.middlewares(req,res,()=>json(404,{error:'不存在'}));return;

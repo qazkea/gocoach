@@ -5,10 +5,12 @@ import "./style.css";
 import {GoBoard} from "./GoBoard";
 import {Course} from "./TeachingPanel";
 import {EngineEntry} from "./EnginePanel";
+import {FullGameReview} from "./FullGameReview";
 
 function App() {
   const [game, setGame] = useState<Replay>();
   const [step, setStep] = useState(0);
+  const [autoScan,setAutoScan] = useState(true);
   const [status, setStatus] = useState("请选择已结束对局的完整 19 路 SGF");
   const [error, setError] = useState("");
   const request = useRef(0);
@@ -53,9 +55,10 @@ function App() {
 
   return <main>
     <h1>围棋赛后复盘</h1>
-    <p>仅用于已结束对局。文件在本机浏览器读取；仅显式打开真实分析时将必要棋局发送到同机服务，无外发；不提供实时辅助、账号连接或自动同步。</p>
+    <p>仅用于已结束对局。文件在本机浏览器读取；默认导入后自动整局扫描，将必要棋局发送到同机回环服务；可关闭自动扫描仅回放或手动分析，无外发；不提供实时辅助、账号连接或自动同步。</p>
     <p>仅基础回放校验：Chinese / Japanese 的占点、提子、自杀与简单劫；不计分、不裁判终局或长周期争议，不代表完整规则支持。</p>
     <p>支持单谱单线 FF[4]、19 路、明确 RU 与 KM；UTF-8 / GBK / Latin1（无 CA 时为 Latin1）。最多 1 MiB、2000 节点。初始 setup 可用；分支、途中 setup、规则例外及未支持属性会拒绝。尚未验证野狐兼容。</p>
+    <label><input type="checkbox" checked={autoScan} onChange={e=>setAutoScan(e.target.checked)}/>导入后自动整局扫描</label>
     <label>选择 SGF 文件 <input type="file" accept=".sgf" onChange={upload} /></label>
     <p role="status">{status}</p>
     {error && <p role="alert">{error}</p>}
@@ -66,6 +69,7 @@ function App() {
     </section>}
     <p>示例分析：预设数据，非真实引擎或在线AI。仅四份合成记录可用，不代表真实棋力评估。</p>
     {game && <Course key={request.current} game={game} step={step} onStep={setStep} />}
+    {game && <FullGameReview key={'review:'+request.current} game={game} step={step} onStep={setStep} autoScan={autoScan} />}
     {game && <EngineEntry key={request.current + ':' + step} game={game} step={step} />}
     {game && frame && <section aria-label="棋谱回放" tabIndex={0} onKeyDown={navigate}>
       <p>第 {step} / {game.frames.length - 1} 手：{frame.move}</p>

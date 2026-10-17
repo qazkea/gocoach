@@ -31,7 +31,7 @@ function estimate(value:unknown):Estimate {
  if(typeof v.visits!=='number' || !Number.isSafeInteger(v.visits) || v.visits<0 || typeof v.winrate!=='number' || !Number.isFinite(v.winrate) || v.winrate<0 || v.winrate>1 || typeof v.scoreLead!=='number' || !Number.isFinite(v.scoreLead)) throw Error('引擎数值无效');
  return {visits:v.visits,winrate:v.winrate,scoreLead:v.scoreLead};
 }
-export function result(value:unknown, p:Position, engine:string, model:string):EngineResult {
+export function result(value:unknown, p:Position, engine:string, model:string):Omit<EngineResult,'engineSession'> {
  const v=object(value);
  if(v.warning!==undefined || v.error!==undefined) throw Error('引擎 warning/error，本次分析未完成');
  const root=object(v.rootInfo);

@@ -32,6 +32,7 @@ try {
  }
  async function upload(sgf,end=true){
   await page.goto(url);
+  await page.getByLabel('导入后自动整局扫描').uncheck();
   await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(sgf)});
   if(end)await page.getByRole('button',{name:'末尾',exact:true}).click();
  }

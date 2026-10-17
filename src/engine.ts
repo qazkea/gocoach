@@ -10,6 +10,7 @@ export interface EngineInput {
 }
 export interface Estimate {visits:number; winrate:number; scoreLead:number}
 export interface EngineResult {
+ engineSession:string;
  engine:string; model:string; profile:string; komi:number; bonus:string;
  root:Estimate; candidates:(Estimate & {move:string; pv?:string[]})[];
 }
