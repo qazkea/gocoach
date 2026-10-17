@@ -20,6 +20,8 @@
     "src",
     "server",
     "tests",
-    "playwright.config.ts"
+    "desktop-tests",
+    "playwright.config.ts",
+    "playwright.desktop.config.ts"
   ]
 }

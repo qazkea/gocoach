@@ -24,7 +24,7 @@
     "test": "playwright test",
     "desktop:dev": "npm run build && electron .",
     "desktop:pack": "npm run build && electron-builder --win --x64 --dir --publish never",
-    "test:desktop": "playwright test -c playwright.desktop.config.ts"
+    "test:desktop": "npm run desktop:pack && playwright test -c playwright.desktop.config.ts"
   },
   "dependencies": {
     "react": "^19.1.0",

@@ -18,6 +18,7 @@ async function body(req:IncomingMessage) {
  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
 }
 const server=createServer(async(req,res)=>{
+ if(production)res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'");
  const json=(status:number,value:unknown)=>{if(!res.destroyed&&!res.writableEnded) {res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));}};
  if(req.headers.host!==origin.slice(7) || (req.headers.origin!==undefined&&req.headers.origin!==origin) || req.headers['sec-fetch-site']==='cross-site') {json(403,{error:'来源拒绝'});return;}
  const pathname=new URL(req.url??'/',origin).pathname;
