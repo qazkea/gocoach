@@ -46,4 +46,14 @@ Execution: in-progress
 - https://www.electron.build/docs/win/ （当前v27，不能用于推断锁定v26配置）
 - https://unpkg.com/app-builder-lib@26.15.3/out/options/winOptions.d.ts （已发布v26包声明）
 - `npm view electron@44.8.0 version engines --json`、`npm view electron-builder version engines --json`及26.15.3 tarball元数据已由主代理读取。GitHub猜测v26.15.3 raw tag地址返回404，不作为源码证据。
-- 更早公开预研见14-electron-preflight.md；本文在版本/签名选项等冲突处优先。尚无本项目桌面安装/打包/运行成功证据。
+- 更早公开预研见14-electron-preflight.md；本文在版本/签名选项等冲突处优先。最初尚无本项目桌面安装/打包/运行成功证据；候选及主代理复测后续见14-implementation-log.md，最终验收未完成。
+
+## 审查确认的边界补充（待修复）
+
+主代理已核实独立双审查指出的三个P2，候选3c54fe9虽然19桌面/110网页回归通过，仍不得据此标done：
+
+- 首屏加载期间原生配置选择不得中止初始loadURL并被当成启动失败退出。首屏未就绪时禁用选择菜单且选择函数同样校验；加载完成再启用，避免只依赖菜单灰态。
+- Windows路径必须完整限定盘符/UNC，或先固定为完整路径后校验、展示和传入；本票采用拒绝根相对路径（例如`\\local\\katago.exe`），同时校验operator自身及四个字段。Node的isAbsolute在Windows上对此返回true，不能单独作凭据；不能因主/utility cwd盘符不同执行另一文件。
+- 正常关闭必须收到bootstrap在await bridge.close成功后发出的确认，并确认utility以0退出；异常退出、明确close失败消息和关闭超时分别报告，不能在quitting期间一概吞掉。避免未开始stop就产生无人处理的reject。
+- 关闭失败保留窗口且默认不继续退出；用户若明确选择“退出应用（引擎回收未确认）”，才允许以失败退出码退出，并清楚保留未确认回收警告。不能将此兜底算正常关闭或宣称没有残留，也不能为通过测试私自杀其他进程。优先展示明确错误，不把错误只留stderr或退化成笼统超时。
+- 三项均通过真实打包exe的界面/原生菜单及外部I/O故障注入做实际RED→GREEN，正常19测试与110网页语义回归保留；不mock生命周期或添加renderer业务侧通道。
