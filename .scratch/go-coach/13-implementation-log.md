@@ -1,8 +1,8 @@
 # 13 实施记录：整局本地扫描
 
-Execution: in-progress
+Execution: done
 
-实现子代理交付，等待主代理独立 Spec / Standards 审查、整合复测及授权合成谱 GPU 验收；未标 done。
+以下为实施及审查阶段的历史记录。主代理现已完成独立审查、整合复测与合成谱GPU验收；最终证据及未覆盖项见[13-main-acceptance.md](13-main-acceptance.md)。
 
 ## 基线和边界
 

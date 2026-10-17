@@ -1,6 +1,6 @@
 # 13：整局扫描与逐手本地分析（第一纵切片）
 
-Execution: in-progress
+Execution: done
 
 依据：desktop-review-scope.md，用户选择导入后自动整局扫描、逐手按需中文讲解，并要求继续。当前交付只实现本地整局扫描和可查看的真实引擎结果，不冒充桌面版或DeepSeek讲解已经完成。
 
@@ -42,3 +42,5 @@ Execution: in-progress
 - typecheck/build/全套浏览器回归；保存桌面及窄窗实际截图并实际查看。受控引擎测试不证明真实GPU性能。
 - 独立Spec/Standards审查；整合后主代理复跑并使用已获准KataGo+b18进行合成短谱整局实测，核对N+1局面输入/结果绑定、完整性和清理，记录实际耗时不承诺任意整盘速度。不使用用户私人棋谱、不联网。
 - 主代理最终验收后才能标done。本切片不等于整体新主线完成；后续是Electron桌面、08保护与05/10真实中文讲解。
+
+主代理已完成整合验收，记录见[13-main-acceptance.md](13-main-acceptance.md)：最终代码ed10ae9，110条浏览器回归＋13局面真实GPU核对；限制与失败记录均保留。
