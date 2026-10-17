@@ -2,6 +2,18 @@
   "name": "go-coach",
   "version": "0.1.0",
   "private": true,
+  "main": "desktop/main.mjs",
+  "description": "Offline Go game review desktop",
+  "author": "Go Coach",
+  "build": {
+    "appId": "local.go-coach.desktop",
+    "productName": "Go Coach",
+    "asar": false,
+    "directories": {"output": "desktop-release"},
+    "files": ["desktop/*.mjs", ".server/*.js", "dist/**/*", "package.json", "!node_modules/**/*"],
+    "win": {"signExecutable": false, "signAndEditExecutable": false},
+    "npmRebuild": false
+  },
   "type": "module",
   "scripts": {
     "dev": "npm run build:server && node .server/index.js",
@@ -9,7 +21,10 @@
     "start": "node .server/index.js --production",
     "build": "tsc --noEmit && vite build && npm run build:server",
     "typecheck": "tsc --noEmit",
-    "test": "playwright test"
+    "test": "playwright test",
+    "desktop:dev": "npm run build && electron .",
+    "desktop:pack": "npm run build && electron-builder --win --x64 --dir --publish never",
+    "test:desktop": "playwright test -c playwright.desktop.config.ts"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -20,6 +35,8 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "electron": "44.8.0",
+    "electron-builder": "26.15.3",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.0",
     "vite": "^7.1.0"

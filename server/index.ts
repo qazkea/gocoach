@@ -49,7 +49,7 @@ const server=createServer(async(req,res)=>{
   vite.middlewares(req,res,()=>json(404,{error:'不存在'}));return;
  }
  try {
-  const root=resolve('dist');const path=resolve(root,'.'+decodeURIComponent(pathname==='/'?'/index.html':pathname));
+  const root=resolve(process.env.GO_COACH_STATIC_ROOT??'dist');const path=resolve(root,'.'+decodeURIComponent(pathname==='/'?'/index.html':pathname));
   if(!path.startsWith(root+sep)) throw Error('越界');
   const data=await readFile(path);
   const types:Record<string,string>={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json'};
@@ -65,8 +65,8 @@ if(!address||typeof address==='string')throw Error('监听失败');
 origin=`http://127.0.0.1:${address.port}`;
 if(!production) vite=await (await import('vite')).createServer({server:{middlewareMode:true,hmr:{server,host:'127.0.0.1',clientPort:address.port},fs:{strict:true}},appType:'spa'});
 console.log('LISTENING '+origin);
-let closing=false;
-async function close(){if(closing)return;closing=true;server.close();server.closeAllConnections();await engine.close();await vite?.close();}
+let closing:Promise<void>|undefined;
+export function close():Promise<void>{return closing??=(async()=>{server.close();server.closeAllConnections();await engine.close();await vite?.close();})();}
 process.on('SIGINT',()=>void close());process.on('SIGTERM',()=>void close());
 // Parent test harness requests graceful shutdown via IPC, never an HTTP action.
 process.on('message',m=>{if(m==='close') void close().then(()=>process.disconnect?.());});
