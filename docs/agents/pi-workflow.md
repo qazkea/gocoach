@@ -6,9 +6,9 @@
 ## 固定配置与动态任务
 
 - 主会话：openai-codex/gpt-6-astra，high。
-- 实现子代理：implementer，openai-codex/gpt-6-astra，medium。
-- 审查子代理：reviewer，openai-codex/gpt-6-astra，medium。
-- 模型参数分别由 `.pi/settings.json` 与 `.pi/agents/*.md` 固定，不依赖口头重复。
+- 所有子代理（implementer、reviewer、general-purpose、Explore、Plan）：统一使用 `openai-codex/gpt-6.1-sol`，`thinking: max`。
+- 主会话启动默认值仍由 `.pi/settings.json` 控制，本次只调整子代理；子代理参数固定在 `.pi/agents/*.md`，不依赖口头重复。
+- 新建和续接子代理均遵循上述模型配置；已运行的推理不会因文件修改而热切换，需在安全检查点保存进度后使用新配置接续。
 - agent 文件只定义角色底线。主代理必须为每次调用编写具体 prompt：
   任务目标、规格/任务路径、已确认决策、测试边界、修改范围、依赖与验收标准。
 - 不用 general-purpose 绕过 implementer/reviewer 的固定配置。
