@@ -69,3 +69,21 @@ Execution: in-progress
 - engineSession覆盖真实脚本进程重启、同进程失败恢复；未在浏览器测试中强制重启整个Node服务并维持同一页面。服务实例UUID代码隔离仍需独立审查。
 - 不跨标签共享缓存/调度、不持久化；完整引擎候选/PV仍先按既有边界核验，再仅缓存前10。
 - Windows桌面、DeepSeek讲解、外发/费用授权、真人教学效果不在本票交付中；任务保持in-progress。
+
+## 审查阶段重构：共享分析传输
+
+2026-10-17，独立 Spec 审查无缺陷；Standards 指出 `EnginePanel.tsx` 与 `analyze.ts` 重复 token / POST / NDJSON 处理。主代理采纳此非阻断建议，明确在 review refactor 阶段消除重复，不新增测试 seam、不编造 TDD RED。
+
+- 工作树 `D:/code/tmp/go-coach-review-13`，基线 `56562883c5b5280f3ea6fcb93d2d32a315b842ae`，分支 `implement/full-game-review-final`。
+- 仅将 `src/EnginePanel.tsx` 的 HTTP 代码替换为已有 `analyze` 调用；保留 active 与 AbortController、先清结果及等待状态、`[current,retry]` 触发、cleanup 取消、仅 active 时更新状态/成功结果/失败清空。全部手动变化操作保持原样。
+- 共享 helper 在流完整结束后返回；服务现有 result 后立即 end，接受这一更保守的成功时点。未改 helper、KataGo、session、队列、规则，未泛化 transport 或新增 interface。
+- 依赖从主工作区 node_modules 复制到本工作树；未修改主工作区，未安装新依赖。
+
+实际验证（自有端口5191，运行前已确认空闲）：
+
+- `npm.cmd run typecheck`：通过。
+- `npm.cmd run build`：通过（39 browser modules及Node bundle）。
+- `GO_COACH_TEST_PORT=5191` 下 `npm.cmd test -- tests/engine.spec.ts tests/full-game.spec.ts tests/board-engine-visual.spec.ts --workers=4`：**49 passed，0 failed，0 skipped，53.5秒**。包括手动取消迟到成功/失败、清旧结果、重试、分支操作、扫描与手动竞争/并存现有回归。
+- `git diff --check`：通过。
+- 运行后 `2026-10-17T12:04:27+08:00`：5191监听0，命令行包含本工作树的node进程0；未停止用户5173。
+- 本轮未运行真实GPU或完整110条；由主代理独立差异检查、整合后完整复跑及真实合成谱GPU验收。未读取Key、未调用在线AI、未push、未标done；保留工作树及分支。

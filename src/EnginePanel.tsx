@@ -1,7 +1,8 @@
 import {GoBoard} from "./GoBoard";
 import {useEffect,useState} from 'react';
 import type {Replay} from './replay';
-import {engineInput,gtp,type EngineResult} from './engine';
+import {gtp,type EngineResult} from './engine';
+import {analyze} from './analyze';
 import {startVariation,extendVariation,seekVariation,type Variation} from './variation';
 export function EngineEntry({game,step}:{game:Replay;step:number}) {
  const [open,setOpen]=useState(false);
@@ -16,25 +17,9 @@ function EnginePanel({game,step,onClose}:{game:Replay;step:number;onClose:()=>vo
  useEffect(()=>{
   let active=true;const controller=new AbortController();
   setResult(undefined);setStatus('等待本机服务…');
-  void (async()=>{
-   const auth=await fetch('/api/token',{signal:controller.signal}).then(r=>r.json());
-   const response=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':auth.token},body:JSON.stringify(engineInput(current.replay,current.cursor)),signal:controller.signal});
-   if(!response.ok) {const data=await response.json();throw Error(data.error??'本机服务失败');}
-   const reader=response.body!.getReader();const decoder=new TextDecoder();let buffer='';let final=false;
-   while(true) {
-    const {done,value}=await reader.read();if(done)break;
-    buffer+=decoder.decode(value,{stream:true});
-    const lines=buffer.split('\n');buffer=lines.pop()!;
-    for(const line of lines) {
-     const data=JSON.parse(line);
-     if(!active)return;
-     if(data.error)throw Error(data.error);
-     if(data.status)setStatus(data.status);
-     if(data.result){setResult(data.result);setStatus('分析完成');final=true;}
-    }
-   }
-   if(!final)throw Error('本机服务中断，分析未完成');
-  })().catch(e=>{if(active){setResult(undefined);setStatus('分析失败：'+e.message);}});
+  void analyze(current.replay,current.cursor,controller.signal,status=>{if(active)setStatus(status);})
+   .then(result=>{if(active){setResult(result);setStatus('分析完成');}})
+   .catch(e=>{if(active){setResult(undefined);setStatus('分析失败：'+e.message);}});
   return()=>{active=false;controller.abort();};
  },[current,retry]);
  function change(v:Variation){setResult(undefined);setStatus('等待本机服务…');setError('');setCurrent(v);}
