@@ -33,16 +33,28 @@ test.describe('分析中换配置',()=>{
 
 test.describe('桥故障',()=>{
  test.use({engineScenario:'uncooperative'});
- test('受控杀死本实例 utility 后仍回收自有引擎，并能正常退出',async({desktop})=>{
+ test('受控杀死本实例 utility 后仍回收自有引擎，但只允许明确非零退出',async({desktop})=>{
   const run=await desktop.launch();await desktop.select(run,desktop.operator);await upload(run.page);
   await expect.poll(async()=>(await desktop.observed()).filter(q=>q.moves).length).toBe(1);
-  await run.app.evaluate(({dialog})=>{dialog.showErrorBox=()=>{};}); // Acknowledge native error I/O, not lifecycle.
+  const warning=run.app.evaluate(({dialog})=>new Promise<any>(resolve=>{
+   dialog.showMessageBox=(async(...args:any[])=>{resolve(args.at(-1));return {response:0,checkboxChecked:false};}) as typeof dialog.showMessageBox;
+  }));
   const owned=ownedProcesses(processes(),run.child.pid!);
   const bridge=owned.find(p=>p.CommandLine?.includes('node.mojom.NodeService'));
   expect(bridge,'fault injection must identify this invocation-owned utility').toBeTruthy();
   await writeFile(join(desktop.evidence,'fault-ownership.json'),JSON.stringify(bridge,null,2));
   process.kill(bridge!.ProcessId,'SIGKILL'); // External OS failure; never a port/name kill.
   await expect.poll(()=>processes().filter(p=>p.ExecutablePath?.toLowerCase()===desktop.engine.toLowerCase()).map(p=>p.ProcessId),{timeout:10000,message:'utility failure must not strand the native engine'}).toEqual([]);
-  await run.close();
+  const options=await warning;
+  expect(options).toMatchObject({type:'warning',defaultId:0,cancelId:0});
+  expect(options.message).toContain('异常退出');
+  expect(run.child.exitCode).toBeNull();
+  const explicit=await run.app.evaluate(({dialog,BrowserWindow})=>new Promise<any>(resolve=>{
+   dialog.showMessageBox=(async(...args:any[])=>{resolve(args.at(-1));return {response:1,checkboxChecked:false};}) as typeof dialog.showMessageBox;
+   BrowserWindow.getAllWindows()[0].close();
+  }));
+  expect(explicit.buttons[1]).toBe('退出应用（引擎回收未确认）');
+  await expect.poll(()=>run.child.exitCode,{timeout:15000}).toBe(1);
+  await expect.poll(()=>processes().filter(p=>owned.some(o=>p.ProcessId===o.ProcessId&&p.CreationDate===o.CreationDate)).map(p=>p.ProcessId)).toEqual([]);
  });
 });

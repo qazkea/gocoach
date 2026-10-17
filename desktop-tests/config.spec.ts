@@ -76,6 +76,34 @@ test('取消与坏配置保留当前有效配置和复盘，有效更换明确�
  await run.close();
 });
 
+for(const field of ['operator','executable','model','dataDir','homeDataDir'])test(`原生选择拒绝 ${field} 根相对和盘符相对路径，保留有效引擎与棋谱`,async({desktop})=>{
+ const run=await desktop.launch();await desktop.select(run,desktop.operator);await upload(run.page);
+ const review=run.page.getByRole('region',{name:'整局复盘'});
+ await expect(review).toContainText('完成：5 / 5');
+ await run.page.getByRole('button',{name:'末尾',exact:true}).click();
+ await expect(run.page.getByRole('region',{name:'棋谱回放'})).toContainText('第 4 / 4 手');
+ const url=run.page.url(),base=JSON.parse(await readFile(desktop.operator,'utf8'));
+ const full=field==='operator'?desktop.operator:base[field];
+ expect(full).toMatch(/^[A-Za-z]:[\\/]/);
+ // Windows defines these as drive-dependent, even though isAbsolute accepts the first.
+ for(const ambiguous of [full.slice(2),full.slice(0,2)+full.slice(3)]) {
+  let selected=ambiguous;
+  if(field!=='operator') {
+   selected=join(desktop.dir,`ambiguous-${field}.json`);
+   await writeFile(selected,JSON.stringify({...base,[field]:ambiguous}));
+  }
+  const result=await desktop.select(run,selected);
+  await writeFile(join(desktop.evidence,`${field}-${ambiguous[0]==='\\'?'root':'drive'}-result.json`),JSON.stringify({selected,ambiguous,result},null,2));
+  expect(result.messages).toEqual([]);expect(result.errors).toHaveLength(1);
+  expect(result.errors[0]).toContain('完整限定');
+  expect(run.page.url()).toBe(url);
+  await expect(review).toContainText('完成：5 / 5');
+  await expect(run.page.getByRole('region',{name:'棋谱回放'})).toContainText('第 4 / 4 手');
+ }
+ await upload(run.page);await expect(review).toContainText('完成：5 / 5');
+ await run.close();
+});
+
 test('配置内容变更不被同路径静默信任，重新确认才恢复扫描',async({desktop})=>{
  const first=await desktop.launch();await desktop.select(first,desktop.operator);await first.close();
  await writeFile(desktop.operator,(await readFile(desktop.operator,'utf8'))+'\n');

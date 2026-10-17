@@ -68,3 +68,63 @@ Execution: in-progress（主代理验收前不标 done）
 - 未人工测试真实Windows文件选择器、双击/SmartScreen；Playwright仅控制原生dialog返回。未跑真实GPU、私谱、DeepSeek或任何在线AI/费用/Key流程。
 - 动态测试了初始页面加载中退出、引擎版本启动中/分析中退出及utility受控SIGKILL后本机后代回收。未强制拖住桥module import来覆盖每个启动时隙，15秒握手超时/关闭回收失败分支、主进程硬杀、系统关机/断电未动态验证，不承诺所有灾难场景无孤儿。
 - 没有全页面紧凑布局、签名安装器、发布、自动更新、全Windows机器兼容或整体中文教练完成声明。原生worker一次异常仍需主代理复核/观察。
+
+## 三项 P2 审查修复候选（2026-10-18 本地时间，待独立复审）
+
+Execution 仍为 **in-progress**。本节补充而不替换上面的历史证据和限制。
+
+### 基线与修改范围
+
+- 继续只在原 worktree / `implement/windows-desktop-sol` 修改，未新建 isolation、调度子代理、修改主工作区、push 或标 done。先读主工作流，再从 `3c54fe9` 快进至主代理边界文档 `89d6d66`；提交前又快进至 `56770d8`，完整保留主代理新增的 `14-main-acceptance.md`。
+- 完整重读最新14-design、原实施记录、desktop三个mjs、所有桌面测试/fixture、任务/领域说明/GLOSSARY和主路径 TDD 三文件。没有相关 ADR 目录。
+- 仅修复 a46588d1 / 1dba441e 已确认的首屏选择竞争、Windows路径确定性、关闭确认三个 P2；未改 server/棋规/复盘/网页110测试或 package/lock，不升级依赖，不安装系统组件。
+- `main.mjs` 每次 start 在整个 loadURL 期间保持 starting；菜单 disabled，choose 也守卫，finally 统一恢复。已开始 stop 的旧导航/地址握手不再成为另一次启动失败/退出；选择中同样防重入。
+- `config.mjs` 对 operator 本身和 executable/model/dataDir/homeDataDir 统一要求完整盘符根路径或完整普通 UNC，拒绝根相对、盘符相对及不完整 UNC；先以 Windows 规则规范化，再 stat、确认展示、保存引用或生成运行 snapshot。保留 `D:/...` 写法，不依当前盘符解释。
+- bootstrap 仅在真实 `await bridge.close()` 成功后发送 `closed` 再退出0；失败发送有实际原因的 `close-error`。main 观察 Promise 只 resolve 事件，不提前制造无人接收的 reject；仅 closed + exit0 算正常关闭，异常退出/缺确认/明确关闭失败/10秒超时分类可见。主动 stop 的后续 exit 不再重复弹框。
+- 失败默认“保留窗口”（defaultId/cancelId=0），不能确认引擎回收的警告明确保留；用户明确选择“退出应用（引擎回收未确认）”才 `app.exit(1)`，不当作正常回收。失败状态不偷偷重启，不遍历或 kill 其他 PID，也不陷入无法退出的循环。
+
+### 本次测试 seam 与真实 RED→GREEN
+
+所有证据新增于 **`D:/code/tmp/go-coach-notes/desktop/review-fix/`**，未覆盖旧目录。仍从真实打包 exe、原生菜单/dialog、实际页面和操作系统效果观察，不读取私有业务状态，不 mock 产品函数或添加 window 业务侧通道。
+
+- 首屏用外部 HTTP forward proxy 拖住**第一次文档响应**，同时核对 `forwarded:false` 和原生 `webContents.isLoadingMainFrame():true`。随后直接调用原生菜单动作，即便 disabled 也验证 choose 自身守卫；放行后再真实选择配置并完成扫描。
+- 关闭故障由外部合成引擎 adapter 的 stdin EOF 记录确认“回收已开始”，再操作已由 PID + CreationDate + 父链确认的 utility。既有 csc 编译的独立 OS adapter 还逐次复核启动毫秒/执行路径，只对该 utility 做 suspend/resume 或 exit0；未操作非自有进程。
+- 明确 close 失败通过外部平台 adapter entry 继续导入**未修改的真实 bootstrap**，仅在 Node 的公开 `ChildProcess.kill` OS 信号 seam 为确切自有引擎子进程返回拒绝。真实6秒回收期限失败、bootstrap消息和主端处理都执行。原生 utility fork I/O 只为加载此外部 adapter；ESM原生导出通过 Node VM默认loader取得（实验性警告保留），没有导入或替换私有业务模块/函数。适配器不进入产品包，也未向 renderer/HTTP 加测试配置。
+
+| 切片 | 实际 RED | GREEN |
+|---|---|---|
+| 首次文档仍 pending 时选择 | `03-starting-red`：held=true、forwarded=false、loading=true；旧菜单 enabled=true，实际打开chooser一次 | `05-starting-green` 2 passed；菜单false/chooser0，就绪后真实配置与扫描成功；最终29全量保留 |
+| Windows确定路径 | `06-paths-red` 5 failed：operator及四字段的真实根相对路径都被错误接受并出现信任确认 | `08-paths-green` 5 passed；另测盘符相对，拒绝后保留旧origin、完整扫描和已定位的棋谱，原有效配置仍可扫描 |
+| 回收中非零 utility exit | `09-shutdown-exit-red`：EOF已记录、身份核实后受控OS故障；旧程序直接退出0而没有保留窗口警告 | `10-shutdown-exit-green` 1 passed，默认保留、明确非零退出；最终全量再覆盖 |
+| 明确close失败分类 | `16-close-error-red-old-candidate`：只读启动旧 `candidate-14-sol`，OS拒绝实际有记录，真实桥报6秒close失败，但旧main忽略消息直到10秒笼统错误 | `17-close-error-green` 2 passed；实际原因立即通过原生警告呈现，而非超时。此额外分支测试是在09修复代码之后补写，RED来自未修改的旧候选，不冒称该分支先于实现编写 |
+| 超时后不得重复弹框 | `18-timeout-red`：实际暂停已确认utility，10秒警告后恢复；观察到同一次关闭自动弹框两次 | 加入 stopRequested 去重后 `19-lifecycle-green` 12 passed；最终全量仍验证只有一次，且可明确退出1 |
+| exit0仍须closed确认 | `20-no-ack-red-old-candidate`：外部OS以0终止EOF阶段utility，旧程序将缺确认误作正常退出 | 最终29全量中 zero-without-ack 通过：明确“缺少关闭确认”、保留窗口，只有确认后退出1 |
+
+本轮新增10条，原19条均保留。原有“utility崩溃”和“破损桥启动”两条异常测试的退出期待按修订规格从错误的正常0退出加强为默认保留/明确1退出；其错误可见、回收观察与不无限重启检查不删除。正常关闭、取消/恢复/更换、生产安全和移动只读目录语义不变。
+
+### 失败/夹具问题原样保留
+
+- `01` 初版夹具在等待 firstWindow 时文档尚被自身proxy阻塞，未形成有效RED；`02` 已捕获正确RED但过早关闭proxy导致teardown超时。改为先释放并完成文档、再断言的 `03` 是干净RED。另行查询没有遗留本次进程。
+- `04` pack成功，测试命令中的正则 `|` 被 Windows cmd误作管道；改用现有Node执行Playwright CLI，`05`通过，不算产品问题。
+- `07`：7 passed / 5 failed，新增路径测试误以为自动扫描会把回放位置移到末尾，实际仍在第0手。测试先通过真实“末尾”按钮定位后再验证保留；没有为此改产品，`08`通过。
+- `11`–`15` 为平台故障夹具探针（Playwright去掉NODE_OPTIONS、utility的require预加载未生效、CJS/ESM原生对象差异、inspector evaluate无默认动态import callback等），未实际拒绝kill，**不计产品RED**。`16`开始实际OS拒绝、真实close失败及错误分类都已留证。
+- `24` 独占创建目标目录后，Node cp(errorOnExist)拒绝复制到已存在根目录；未生成完整包。`24b`改为逐入口独占复制，另取时间戳新目录成功；仅删除24自行创建且复核为空的目录，不动旧候选。
+- 前次 Playwright宿主 `0xC0000409` 仍是**根因未知的历史风险**，本次没有复现不能证明已解决或稳定；不以 skip/retry 凑绿。本次全量21只执行一次，29条全部通过。
+
+### 最终验证与新完整包
+
+- `npm.cmd run test:desktop`：真实build/pack后 **29 passed，0 failed，0 skipped，2.4分钟**，`21-full-desktop.log`。配置/扫描/棋盘/CSP/renderer安全/异cwd/中文空格只读目录/正常和异常退出全覆盖上述 seam。
+- 先确认自有5193空闲，再 `GO_COACH_TEST_PORT=5193; npm.cmd test -- --workers=4`：**110 passed，0 failed，0 skipped，2.7分钟**，`22-web-110.log`；before/after均无5193监听。没有停止或操作用户5173。
+- 独立 `npm.cmd run typecheck`、`npm.cmd run build` 成功（`23-typecheck.log` / `23-build.log`）；desktop三个mjs及外部平台adapter的 `node --check`、`git diff --check` 通过。package/lock/server没有本轮diff。
+- 新完整包为 **`D:/code/tmp/go-coach-desktop/candidate-14-review-fix-2026-10-17T17-14-12-354Z/`**；实际exe是其中 `Go Coach.exe`。**89文件，386,456,712字节（约368.6MiB），exe 247,033,344字节**，未签名/未发布/asar:false。
+- `24-candidate-manifest.json` 逐文件SHA-256确认新包与本轮真实测试产物完全相同，并核对18个应用资源与当前源码/构建输出；资源仍仅3个desktop mjs、.server、dist、package元数据，没有测试adapter、operator、模型、.scratch或密钥。
+- 直接从这个**持久新候选**、独立userData/异cwd/无外部Node产品PATH再次运行配置→5局面扫描→逐手/棋盘→原生关闭：**1 passed**（`25-persistent-candidate.log`），正常退出0且无强制清理。此为工件核验，不是失败重试。
+- 已实际查看25下 `scan-and-board.png` 和21下 `timeout-preserved.png`；正常5点走势/浅木棋盘/提子1与DeepSeek未启用可见，异常时窗口及棋谱仍保留。原生警告只控制dialog返回并保存实际options，截图不是人工系统dialog体验的证明。
+- `27-audit.json` 汇总全量28份fixture退出记录：26次正常应用退出0、5次明确异常退出1，全部 `survivors:[]`；直接启动的smoke/early-quit/破损包另由对应测试检查。正常流程不依赖fixture kill。异常adapter的release/OS故障及退出1不冒充正常回收保证。
+- `26-live-cleanup.json` 最后按本worktree/独占测试exe/新旧候选精确路径查询，没有相关应用/utility/引擎存活、5193无监听；此次查询不发送信号。`27-audit.json`另逐一复核旧 `candidate-14-sol` **89文件SHA-256/字节全部未变**。
+
+### 仍未覆盖 / 主代理下一步
+
+- 仍待主代理两轴独立复审、整合后独立复跑及真实KataGo/GPU桌面验收；本代理没有跑GPU，也不更改任务完成状态。
+- 本轮明确close失败/10秒超时已通过外部OS/引擎adapter动态验证，但不等于真实GPU驱动拒绝回收、主进程硬杀、OS关机/断电等灾难场景保证。UNC支持未挂载真实共享作跨机器验证。
+- 仍未人工操作系统文件选择器、双击/SmartScreen或做跨机兼容/紧凑桌面布局验收。未接入DeepSeek、读取Key、外发棋谱或付费；生产配置仍独立dataDir且禁recordSyntheticEvidence。旧网页Node IPC入口未改并通过110回归。

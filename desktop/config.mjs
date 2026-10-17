@@ -1,10 +1,18 @@
 import {open, stat, mkdir, mkdtemp, writeFile, rename, rm} from 'node:fs/promises';
-import {isAbsolute, join} from 'node:path';
+import {win32, join} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
+
+function qualifiedPath(value,label) {
+ const path=typeof value==='string'?value.replaceAll('/','\\'):'';
+ const unc=/^\\\\([^\\:]+)\\([^\\:]+)(?:\\|$)/.exec(path);
+ const full=/^[A-Za-z]:\\/.test(path)||(unc&&!['.','..','?'].includes(unc[1])&&!['.','..'].includes(unc[2]));
+ if(!full||/[\0\r\n]/.test(path))throw Error(`${label} 必须是无换行的完整限定盘符根路径或完整 UNC 路径`);
+ return win32.normalize(path);
+}
 
 // The native chooser selects an executable-bearing operator file, not renderer input.
 export async function readOperator(path) {
- if(typeof path!=='string'||!isAbsolute(path)||/[\0\r\n]/.test(path))throw Error('请选择绝对路径的本地 JSON 配置');
+ path=qualifiedPath(path,'配置文件');
  const file=await open(path,'r');
  let raw;
  try {
@@ -18,8 +26,7 @@ export async function readOperator(path) {
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('配置必须是 JSON 对象');
  const config={};
  for(const key of ['executable','model','dataDir','homeDataDir']) {
-  const path=value[key];
-  if(typeof path!=='string'||!isAbsolute(path)||/[\0\r\n]/.test(path))throw Error(`${key} 必须是无换行的绝对路径`);
+  const path=qualifiedPath(value[key],key);
   const info=await stat(path);
   if(key==='executable'||key==='model') {if(!info.isFile())throw Error(`${key} 必须指向已有文件`);}
   else if(!info.isDirectory())throw Error(`${key} 必须指向已有目录`);

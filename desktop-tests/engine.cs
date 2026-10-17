@@ -27,7 +27,7 @@ class DesktopEngine {
    var q=Json.Deserialize<Dictionary<string,object>>(line);
    Record(q);
    if(q.ContainsKey("action")) { Console.WriteLine(line); continue; }
-   if(scenario=="waiting" || scenario=="uncooperative") continue;
+   if(scenario=="waiting" || scenario=="uncooperative" || scenario=="shutdown-gate") continue;
    if(scenario=="bad-protocol") { Console.WriteLine("not-json"); continue; }
    int turns=((IList)q["moves"]).Count;
    string player=(string)q["initialPlayer"];
@@ -36,6 +36,10 @@ class DesktopEngine {
    Console.WriteLine(Json.Serialize(new {id=q["id"],turnNumber=turns,isDuringSearch=false,
     rootInfo=new {currentPlayer=player,visits=101,winrate=0.6,scoreLead=2.5},
     moveInfos=new[]{new {move="D16",visits=100,winrate=0.6,scoreLead=2.5,pv=new[]{"D16","pass"}}}}));
+  }
+  if(scenario=="shutdown-gate") {
+   Record(new {action="stdin-closed",pid=pid});
+   while(!File.Exists(Observe + ".release")) Thread.Sleep(20);
   }
   if(scenario=="uncooperative") Thread.Sleep(Timeout.Infinite);
  }

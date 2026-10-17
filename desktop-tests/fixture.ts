@@ -4,7 +4,7 @@ import {mkdtemp, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 
-export const packaged=resolve('desktop-release/win-unpacked/Go Coach.exe');
+export const packaged=resolve(process.env.DESKTOP_TEST_EXE??'desktop-release/win-unpacked/Go Coach.exe');
 const framework=join(process.env.SystemRoot??'C:/Windows','Microsoft.NET/Framework64/v4.0.30319');
 export function processes() : {ProcessId:number;ParentProcessId:number;ExecutablePath:string;CreationDate:string;CommandLine:string}[] {
  const out=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine,@{n='CreationDate';e={$_.CreationDate.ToString('o')}} | ConvertTo-Json -Compress"],{encoding:'utf8',windowsHide:true});
@@ -25,7 +25,7 @@ export function ownedProcesses(snapshot:ReturnType<typeof processes>,rootPid:num
  return [...owned.values()];
 }
 export type Run={app:ElectronApplication;page:Page;child:ReturnType<ElectronApplication['process']>;pids:number[];close:()=>Promise<void>};
-type Desktop={dir:string;userData:string;operator:string;engine:string;observe:string;evidence:string;launch:(options?:{exe?:string;userData?:string})=>Promise<Run>;observed:()=>Promise<any[]>;select:(run:Run,path?:string,approve?:number)=>Promise<{messages:any[];errors:string[]}>};
+type Desktop={dir:string;userData:string;operator:string;engine:string;observe:string;evidence:string;launch:(options?:{exe?:string;userData?:string;args?:string[];beforeWindow?:(app:ElectronApplication)=>Promise<void>})=>Promise<Run>;observed:()=>Promise<any[]>;select:(run:Run,path?:string,approve?:number)=>Promise<{messages:any[];errors:string[]}>};
 export const test=base.extend<{desktop:Desktop;engineScenario:string}>({
  engineScenario:['normal',{option:true}],
  desktop:async({engineScenario},use,testInfo)=>{
@@ -42,7 +42,7 @@ export const test=base.extend<{desktop:Desktop;engineScenario:string}>({
   const launch:Desktop['launch']=async(options={})=>{
    // A product launch has no external Node/npm/Vite on PATH; only the test host needs Node.
    const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!/^path$/i.test(key)));
-   const app=await _electron.launch({executablePath:options.exe??packaged,cwd:tmpdir(),args:[`--user-data-dir=${options.userData??userData}`],env:{...env,PATH:`${process.env.SystemRoot};${process.env.SystemRoot}/System32`,GO_COACH_CONFIG:operator,GO_COACH_TEST_ENGINE:engine,ENGINE_OBSERVE:observe,ENGINE_SCENARIO:engineScenario}});
+   const app=await _electron.launch({executablePath:options.exe??packaged,cwd:tmpdir(),args:[`--user-data-dir=${options.userData??userData}`,...options.args??[]],env:{...env,PATH:`${process.env.SystemRoot};${process.env.SystemRoot}/System32`,GO_COACH_CONFIG:operator,GO_COACH_TEST_ENGINE:engine,ENGINE_OBSERVE:observe,ENGINE_SCENARIO:engineScenario}});
    const child=app.process();
    child.stdout?.on('data',d=>void writeFile(join(evidence,`app-${child.pid}.stdout`),d,{flag:'a'}));
    child.stderr?.on('data',d=>void writeFile(join(evidence,`app-${child.pid}.stderr`),d,{flag:'a'}));
@@ -58,6 +58,7 @@ export const test=base.extend<{desktop:Desktop;engineScenario:string}>({
     await expect.poll(()=>processes().filter(p=>identities.get(p.ProcessId)===p.CreationDate).map(p=>p.ProcessId),{message:'owned Electron children must exit with the window'}).toEqual([]);
    }};
    runs.push(run);
+   await options.beforeWindow?.(app);
    run.page=await app.firstWindow();
    await expect(run.page.getByRole('heading',{name:'围棋赛后复盘',exact:true})).toBeVisible();
    const owned=ownedProcesses(processes(),child.pid!);
