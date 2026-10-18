@@ -20,7 +20,12 @@ async function quit() {
   menu();
   try {await stop();exiting=true;app.quit();}
   catch(error){
-   const options={type:'warning',title:window?'退出未完成':'启动失败，退出未完成',message:error.message,detail:'不能确认引擎回收。默认保留窗口，不自动重启服务。强行退出不代表引擎已安全回收。',buttons:['保留窗口','退出应用（引擎回收未确认）'],defaultId:0,cancelId:0,noLink:true};
+   const failedBeforeWindow=!window;
+   if(failedBeforeWindow){
+    createWindow();
+    await window.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent('<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"><title>启动失败</title></head><body><h1>启动失败</h1><p>启动失败，无法确认引擎回收，可用文件→退出或关闭窗口重新选择</p></body></html>'));
+   }
+   const options={type:'warning',title:failedBeforeWindow?'启动失败，退出未完成':'退出未完成',message:error.message,detail:'不能确认引擎回收。默认保留窗口，不自动重启服务。强行退出不代表引擎已安全回收。',buttons:['保留窗口','退出应用（引擎回收未确认）'],defaultId:0,cancelId:0,noLink:true};
    const answer=await (window?dialog.showMessageBox(window,options):dialog.showMessageBox(options));
    if(answer.response===1){exiting=true;app.exit(1);}
   } finally {if(!exiting){quitting=undefined;menu();}}

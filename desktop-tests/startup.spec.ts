@@ -76,6 +76,61 @@ test('启动阶段立即原生退出，不遗留本实例 Electron 子进程',as
  } finally {await cleanup(app,child);}
 });
 
+test('破损包默认保留可见安全错误窗口，再次原生退出可明确结束',async({desktop})=>{
+ const broken=join(desktop.dir,'broken-retained');await cp(dirname(packaged),broken,{recursive:true});
+ await rm(join(broken,'resources/app/.server/index.js'));
+ const app=await _electron.launch({executablePath:join(broken,'Go Coach.exe'),cwd:tmpdir(),args:[`--user-data-dir=${desktop.userData}`]});
+ const child=app.process();
+ try {
+  const first=await app.evaluate(({dialog})=>new Promise<any>(resolve=>{
+   dialog.showMessageBox=(async(...args:any[])=>{resolve(args.at(-1));return {response:0,checkboxChecked:false};}) as typeof dialog.showMessageBox;
+  }));
+  expect(first).toMatchObject({title:'启动失败，退出未完成',defaultId:0,cancelId:0});
+  expect(first.message).toContain('本地服务异常退出');
+  await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().some(w=>w.isVisible())),{timeout:5000}).toBe(true);
+  const page=await app.firstWindow();
+  await expect(page.getByRole('heading',{name:'启动失败',exact:true})).toBeVisible();
+  await expect(page.locator('body')).toHaveText('启动失败启动失败，无法确认引擎回收，可用文件→退出或关闭窗口重新选择');
+  expect(page.url()).toMatch(/^data:text\/html/);
+  expect(await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content')).toBe("default-src 'none'");
+  expect(await page.locator('script, a, iframe').count()).toBe(0);
+  expect(await page.evaluate(()=>({node:typeof (window as any).require,process:typeof (window as any).process}))).toEqual({node:'undefined',process:'undefined'});
+  const security=await app.evaluate(({BrowserWindow,Menu})=>{
+   const w=BrowserWindow.getAllWindows()[0],p=(w.webContents as any).getLastWebPreferences();
+   return {node:p.nodeIntegration,isolation:p.contextIsolation,sandbox:p.sandbox,webSecurity:p.webSecurity,exit:Menu.getApplicationMenu()!.items.find(i=>i.label==='文件')!.submenu!.items.find(i=>i.label==='退出')!.enabled};
+  });
+  expect(security).toEqual({node:false,isolation:true,sandbox:true,webSecurity:true,exit:true});
+  const blocked=await page.evaluate(()=>new Promise(resolve=>{
+   document.addEventListener('securitypolicyviolation',event=>resolve({directive:event.effectiveDirective,ran:document.body.getAttribute('data-unsafe')}),{once:true});
+   const script=document.createElement('script');script.textContent="document.body.setAttribute('data-unsafe','ran')";document.body.append(script);
+  }));
+  expect(blocked).toEqual({directive:'script-src-elem',ran:null});
+  const original=page.url();
+  await page.evaluate(()=>{window.open('https://example.com');location.href='https://example.com';});
+  await page.waitForTimeout(500);
+  expect(page.url()).toBe(original);
+  await page.reload(); // Native cancellation leaves Playwright's pending-navigation bookkeeping.
+  await expect(page.getByRole('heading',{name:'启动失败',exact:true})).toBeVisible();
+  expect(app.windows()).toHaveLength(1);
+  const owned=ownedProcesses(processes(),child.pid!);
+  expect(owned.filter(p=>p.CommandLine?.includes('--utility-sub-type=node.mojom.NodeService'))).toEqual([]);
+  const identities=new Map(owned.map(p=>[p.ProcessId,p.CreationDate]));
+  await page.screenshot({path:join(desktop.evidence,'retained-startup-error.png')});
+  const second=await app.evaluate(({dialog,Menu,BrowserWindow})=>new Promise<any>(resolve=>{
+   dialog.showMessageBox=(async(...args:any[])=>{resolve(args.at(-1));return {response:1,checkboxChecked:false};}) as typeof dialog.showMessageBox;
+   const item=Menu.getApplicationMenu()!.items.find(i=>i.label==='文件')!.submenu!.items.find(i=>i.label==='退出')!;
+   item.click(item,BrowserWindow.getAllWindows()[0],{} as any);
+  }));
+  expect(second.title).toBe('退出未完成');
+  await expect.poll(()=>child.exitCode,{timeout:15000}).toBe(1);
+  await expect.poll(()=>processes().filter(p=>identities.get(p.ProcessId)===p.CreationDate)).toEqual([]);
+  await writeFile(join(desktop.evidence,'retained-startup.json'),JSON.stringify({first,second,security,owned,exitCode:child.exitCode,survivors:[]},null,2));
+ } finally {
+  if(child.exitCode===null)await app.evaluate(({dialog})=>{dialog.showMessageBox=(async()=>({response:1,checkboxChecked:false})) as typeof dialog.showMessageBox;}).catch(()=>{});
+  await cleanup(app,child);
+ }
+});
+
 test('破损包的桥提前退出有中文启动错误，明确非零退出而不无限重启',async({desktop})=>{
  const broken=join(desktop.dir,'broken-package');await cp(dirname(packaged),broken,{recursive:true});
  await rm(join(broken,'resources/app/.server/index.js'));

@@ -128,3 +128,25 @@ Execution 仍为 **in-progress**。本节补充而不替换上面的历史证据
 - 仍待主代理两轴独立复审、整合后独立复跑及真实KataGo/GPU桌面验收；本代理没有跑GPU，也不更改任务完成状态。
 - 本轮明确close失败/10秒超时已通过外部OS/引擎adapter动态验证，但不等于真实GPU驱动拒绝回收、主进程硬杀、OS关机/断电等灾难场景保证。UNC支持未挂载真实共享作跨机器验证。
 - 仍未人工操作系统文件选择器、双击/SmartScreen或做跨机兼容/紧凑桌面布局验收。未接入DeepSeek、读取Key、外发棋谱或付费；生产配置仍独立dataDir且禁recordSyntheticEvidence。旧网页Node IPC入口未改并通过110回归。
+
+## 第四项 P2：首窗前启动失败默认保留（2026-10-18，待主代理复审）
+
+Execution 仍为 **in-progress**，仅修复 standards73307c1a 指出的无窗口存活问题，不重做前三项修复。
+
+- 原 worktree / `implement/windows-desktop-sol`，基线0117b65；提交前已 fast-forward 合入主64a9bcb，保留主代理14-main-acceptance更新。未调度子代理、整合主工作区、安装依赖、GPU测试、push或发布。
+- quit失败且尚无窗口时，复用原createWindow安全设置和导航/重定向/新窗/权限/下载拒绝处理；先加载主进程固定中文纯静态data页面，encodeURIComponent编码、meta CSP `default-src 'none'`，不拼接异常/路径、不加renderer接口、不修改正常origin或生产CSP。捕获首次无窗状态，原生warning仍显示“启动失败，退出未完成”和实际异常；保留后文件→退出/关窗仍能再次选择，明确退出为1，不算安全回收。
+- 新测试仍在已批准的真实exe/原生dialog菜单/窗口/OS seam：复制实际完整包删除.server/index.js，首次dialog返回0，核对可见静态内容、CSP实际拦截脚本、Node禁用/隔离/sandbox/webSecurity、外部导航/新窗拒绝、原生退出菜单和无存活Node utility；再从文件→退出返回1，核对退出1及已确认PID+CreationDate全消失。未mock内部业务。首次留窗到第二次退出期间未重启服务。
+
+证据独立目录：`D:/code/tmp/go-coach-notes/desktop/startup-retain-p2/`；历史候选/证据保留。
+
+- **真实RED**：`02-red.log`，build/真实打包成功后1 failed，首次warning默认保留，5秒内无任何可见窗口（expected true / received false）。仅此是本P2产品RED；测试写于产品改动前。
+- `01-red.log`为测试TypeScript缺失Electron原生getLastWebPreferences类型声明，未执行测试，不算RED；仅此原生观察处做类型断言。
+- `03-green.log`为原生取消导航后Playwright仍等待pending navigation的夹具问题；按原security测试先断言URL不变再reload清除记账。`04-green.log`把Chromium network utility误当桥；收窄到Node utility subtype，不忽略真实桥进程。两次失败均保留，不是产品修复或重试凑绿。
+- `05-full.log`：`npm.cmd run test:desktop`真实build/pack后 **30 passed，0 failed，0 skipped，2.2分钟**（原29+新增1）。命令用cmd重定向，未把esbuild正常stderr误作PowerShell异常。
+- `06-web.log`：先确认自有5193空闲，再`GO_COACH_TEST_PORT=5193 npm.cmd test -- --workers=4`，**110 passed，0 failed，0 skipped，2.6分钟**，退出后5193无监听。未停止/操作5173。
+- `07-typecheck.log` / `07-build.log`：显式typecheck/build成功；node --check desktop/main.mjs、git diff --check成功。没有package/lock/server/网页测试改动。
+- 新完整持久包：**`D:/code/tmp/go-coach-desktop/candidate-14-startup-retain-2026-10-18T05-24-29-523Z/Go Coach.exe`**。89文件，**386,457,203字节**（exe247,033,344字节）。`08-manifest.json`逐文件SHA-256及字节相等核对真实测试产物；仅目录免安装包，未签名/未发布。
+- `09-persistent.log`直接以新持久包作破损复制来源复验新增流程：**1 passed**，退出1、自有PID全部消失；已实际查看retained-startup-error.png，固定中文标题/说明可见。dialog返回替换不证明人工系统对话框体验，截图是静态页面而非系统warning。
+- `10-live-cleanup.json`按本worktree/独占测试exe/候选路径查询没有相关桌面/utility/引擎存活，5193无监听；未发送进程信号。新增用例成功路径不依赖fixture强制清理。
+
+仍待主代理独立复审、整合复跑及新包真实GPU验收。主代理此前对旧持久候选的GPU结果只保留于其验收文档，不冒充本包验证。此改动不扩展为OS关机/断电/主进程硬杀保证，也不覆盖人工双击/SmartScreen/原生文件选择器或跨机兼容；历史Playwright worker原生异常风险仍未解释。没有标done。
