@@ -24,7 +24,10 @@ Windows PowerShell 可使用 `npm.cmd` / `npx.cmd`。开发服务仅监听 `127.
 回放区域可聚焦；左右方向键前后浏览，Home/End 到起始/末尾。每个棋盘点提供
 SGF 坐标与黑/白/空的可访问名称（aa 左上，ss 右下，先列后行）。
 
-## Windows 免安装目录包（任务14，待独立审查与主代理验收）
+## Windows 免安装目录包（任务14，本机验收完成）
+
+本机已验收的完整目录：`D:/code/tmp/go-coach-desktop/windows-x64-fa3a620/`，双击其中 `Go Coach.exe`。
+主代理30项真实桌面测试、110项网页回归及真实KataGo合成9局面通过；[验收记录](.scratch/go-coach/14-main-acceptance.md)列明工件摘要和未测范围。
 
 开发构建机需要 Node 24 / npm 11；锁定 Electron **44.8.0**、electron-builder **26.15.3**，只在项目安装：
 
@@ -45,12 +48,12 @@ npm.cmd run test:desktop
 - 批准后重启本实例服务并清空当前复盘；分析中更换同样需要确认。取消或坏输入不破坏当前复盘/配置。
 - 不修改原 JSON，不复制/下载引擎或模型。应用在 Windows userData 的 `go-coach/settings.json` 保存配置引用与 SHA-256 摘要；重启自动检查恢复。原文件更改、消失或路径失效时不再静默启用，需从菜单重选/确认。
 - 桌面每次服务使用 userData 内独立 `go-coach/runs/engine-*` dataDir，不与网页写同一个 `analysis-web.cfg`；复用原模型和 homeDataDir。桌面强制关闭 `recordSyntheticEvidence`，不记录完整私谱请求/响应；仍可能保留引擎自身诊断日志。
-- 窗口正常关闭/菜单退出会通知自有 utility 桥，等待自有引擎回收后退出。超时会明确报错，不按端口/进程名杀其他实例。不要停止他人的5173。
-- 无 preload/renderer 文件或执行接口；Node 关闭、contextIsolation/sandbox/webSecurity 开启，仅加载本次随机127.0.0.1精确 origin。生产 CSP 禁远程/内联脚本与 eval，保留棋盘需要的样式属性；外导航、重定向、新窗、权限及下载默认拒绝。
+- 窗口正常关闭/菜单退出会通知自有 utility 桥，等待关闭确认及正常退出后结束。异常退出/明确关闭失败/超时分别报错，默认保留窗口；只有再次明确选择才按失败退出，不能当成安全回收。首窗前失败也会保留安全静态错误窗口供退出操作。不按端口/进程名杀其他实例，不停止他人的5173。
+- 无 preload/renderer 文件或执行接口；Node 关闭、contextIsolation/sandbox/webSecurity 开启，业务页仅加载本次随机127.0.0.1精确 origin（首窗前失败的固定纯静态错误页另以禁脚本/网络的data页面显示）。生产 CSP 禁远程/内联脚本与 eval，保留棋盘需要的样式属性；外导航、重定向、新窗、权限及下载默认拒绝。
 
 桌面自动化只控制原生 dialog 返回和外部合成引擎 adapter；真实打包 UI 的导入、扫描、逐手、关窗不 mock。
 测试使用隔离 userData，且移除产品进程 PATH 中的外部 Node/npm；临时外部测试引擎由 Windows 已有 .NET Framework csc 编译，缺工具会报错而非自动安装。普通用户运行不需要编译工具。
-真实 Windows 文件选择器、人工双击/SmartScreen、实际 GPU 的桌面验收仍由主代理/用户另行验证。
+实际GPU桌面运行已由主代理验证；真实 Windows 文件选择器、人工双击/SmartScreen体验仍待用户试用，不由平台dialog替身替代。
 主进程被强杀、OS关机/断电等灾难场景不作已验证保证；没有完整跨机器兼容承诺。
 [14实施记录](.scratch/go-coach/14-implementation-log.md) 区分旧 smoke、新 RED→GREEN、实际日志/截图及未测项。
 当前仍复用现有长页面，不是紧凑桌面布局，**DeepSeek中文讲解仍未启用，不是整体中文教练完成**。

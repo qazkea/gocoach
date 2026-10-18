@@ -1,6 +1,39 @@
-# 14：主代理桌面验收（进行中）
+# 14：主代理桌面验收
 
-Execution: in-progress
+Execution: done
+
+## 最终结论（代码fa3a620，本机Windows x64桌面宿主切片）
+
+- 最终代码 `fa3a620fa4b1924701de5bbda6bc8b51b4912941` 已快进整合，代码/测试工作区干净。原三个P2与首窗前失败留空进程P2全部关闭。
+- **Spec**：`47d5dec1-1216-4a2`复审无确认缺陷；**Standards**：`531ac51c-568f-476`复审无确认缺陷。均Astra/Medium、只读独立审查；不把静态审查算测试。
+- 主代理在整合后独立 `npm.cmd run test:desktop`（含typecheck/build/真实pack）：**30 passed，0 failed，0 skipped，2.1分钟**。再独立网页回归（自有5194）：**110 passed，0 failed，0 skipped，2.7分钟**；另typecheck/diff-check通过。日志 `D:/code/tmp/go-coach-notes/desktop/main-fa3a620-{desktop,web}.log`；截图/原生dialog选项/进程记录在`main-fa3a620/`。实际查看最终GPU两张全页及错误窗口截图。
+- 主代理检查退出记录：29份fixture记录含31次应用退出，26次正常0、5次明确异常1、survivors全部空；额外直接启动smoke/early-quit/坏包由各测试检查。异常故障注入与显式exit1不是正常回收保证。自有5194及最终GPU随机58627均已释放；最终目标exe无存活进程，未停止用户5173。
+
+### 已核对的交付包
+
+`D:/code/tmp/go-coach-desktop/windows-x64-fa3a620/Go Coach.exe`
+
+- 必须保留整个目录：**89文件，386,457,432字节（约368.6MiB）**；exe247,033,344字节。Electron44.8.0、内置Node24.22.0，builder26.15.3；未签名、未发布、非单文件安装器。
+- 主代理从自己刚通过30测试的完整包独占复制到上述持久目录，89文件逐字节SHA-256相同，18个app资源严格白名单并核对源码/构建结果，无operator/模型/测试/源业务文件/.scratch/密钥。清单 `D:/code/tmp/go-coach-notes/desktop/main-fa3a620-package.json`。
+- 首次比较实现者候选与主构建包时精确摘要不相等，已确认**仅desktop三个mjs的LF/CRLF差异**（21/75/133字节），其余86文件完全相同，三文件统一行尾后全文相同；不是代码回退。保留实现者原包不覆盖，以主代理新复制的精确同字节目录作为交付包，不谎称两份原包全字节相等。
+
+### 最终目录包真实GPU复测
+
+证据 `D:/code/tmp/go-coach-notes/desktop/main-gpu-final-fa3a620/`，脚本 `D:/code/tmp/go-coach-notes/desktop/main-real-engine.mjs`。
+
+- 从上述持久exe、非项目cwd、隔离userData、移除外部Node/npm产品PATH启动，原生菜单选已有operator（仅平台dialog返回受控）。KataGo v1.18.1 OpenCL+b18、原home缓存，无新模型/驱动下载。
+- Chinese提子/pass **5/5局面，4.420秒**；Japanese HA2白先/pass **4/4局面，2.368秒**。总9/9成功，同引擎会话。逐步核对真实HTTP完整历史/初始方/RU/KM/HA、root和候选/PV显示、双方变化符号、缓存不重发，提子1与白pass/让子木质棋盘正确。
+- 主应用PID28440、真实KataGo27460及记录的所有自有PID+创建时间均消失，正常退出0、无兜底强杀；原operator摘要未改。运行snapshot指向独立userData，recordSyntheticEvidence=false，analysis配置明确禁完整请求/响应日志。
+- 采集仅将真实HTTP流在平台I/O原样缓冲回传，未伪造结果或替换业务；耗时含采集，**不是性能基准，也不是原始引擎协议日志独立核对**。13已有原始协议实测，本票未改分析序列化/结果校验。此前两次候选GPU预验不重复计入此最终9局面。
+
+### 交付边界与保留风险
+
+- 本票仅Windows本机桌面宿主完成：导入、自动整局本地估值、逐手候选/变化与退出管理。**DeepSeek中文讲解尚未接入；仍是长页面，不是紧凑桌面UI或整体中文教练完成。**
+- 原生文件选择器人工操作、人工双击/SmartScreen、真实UNC共享、跨机器兼容、主进程硬杀/OS关机/断电仍未验收；未签名可能有系统提示，不建议绕过保护。用户双击试用另验。
+- 历史Playwright宿主0xC0000409仍原因未知，最终单轮30全过不宣称已根治。npm audit的8个moderate构建链依赖告警保留（无high/critical，不随资源白名单进入app），未擅自升级。
+- 不曾读取DeepSeek Key、传私谱、在线推理或付费，不push/发布；完整2000局面扫描、真实野狐兼容、真人学习效果不在本票证据内。
+
+以下保留候选阶段的历史过程；其中“待修复/下一步”由上述最终结论覆盖。
 
 ## 候选与独立验证
 
@@ -28,7 +61,7 @@ Spec reviewer a46588d1-fb92-423 与 Standards reviewer 1dba441e-41b9-47d 均使�
 - 主代理既有持久包 `candidate-14-review-fix-2026-10-17T17-14-12-354Z/Go Coach.exe` 已跑**真实GPU预验9/9局面**（Chinese提子/pass 5局面5.463秒；Japanese HA2白先4局面2.393秒）。脚本核对真实HTTP完整前缀、显示root/前10候选/PV/双方估值变化与回看缓存；实际KataGo进程28936、应用31548及全部确切自有进程均退出，exit0、无兜底强杀，原operator摘要不变，独立userData且禁止私谱日志。产品PATH没有外部Node/npm，非项目cwd，Electron44.8.0/内置Node24.22.0。证据 `D:/code/tmp/go-coach-notes/desktop/main-gpu-preflight-f3faeff/`；主代理已看提子桌面全页截图。此为前一候选预验，**最终修复包仍须复跑**，不能据此勾done。
 - `npm audit --json`（只查询、不fix）仍报告8 moderate、无high/critical，集中在electron-builder及其下载/日志传递依赖；完整报告 `D:/code/tmp/go-coach-notes/desktop/main-dependency-audit.json`。这些构建依赖不进入资源白名单，仍如实披露而不宣称无漏洞；未做无关升级。
 
-## 下一步验收准备
+## 历史：验收准备
 
 - 主代理真实GPU桌面脚本已写 `D:/code/tmp/go-coach-notes/desktop/main-real-engine.mjs`，已完成前一候选9局面预验；参数为真实exe与全新证据目录。最终仍在最新修复完成、复审和整合复测后再运行。
 - 计划选既有operator配置，通过真实原生菜单（自动化仅替换平台dialog返回）启动既有KataGo+b18；合成提子/白pass及Japanese HA2白先短谱共9局面，逐手核对HTTP完整前缀、真实UI root/候选/PV/符号/缓存，再原生关窗验证所有确切自有PID+创建时间均消失。

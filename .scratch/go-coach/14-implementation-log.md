@@ -1,6 +1,8 @@
 # 14：Windows 桌面实现续接记录
 
-Execution: in-progress（主代理验收前不标 done）
+Execution: done
+
+主代理最终验收：代码fa3a620已整合，独立30桌面/110网页回归及最终交付目录真实GPU9局面通过；四项P2双轴复审关闭。完整包`D:/code/tmp/go-coach-desktop/windows-x64-fa3a620/`，详见[14-main-acceptance.md](14-main-acceptance.md)。以下保留实现阶段历史，“仍待主验/进行中”等原记录由此最终结论覆盖。人工双击/系统dialog/SmartScreen及其他平台未验收，DeepSeek尚未接入。
 
 ## 恢复与范围
 

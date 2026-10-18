@@ -1,6 +1,8 @@
 # 14：Windows桌面运行与免安装目录包
 
-Execution: in-progress
+Execution: done
+
+主代理最终验收见[14-main-acceptance.md](14-main-acceptance.md)：代码fa3a620，30桌面＋110网页回归及最终持久exe真实GPU9局面通过。人工双击/系统dialog/SmartScreen与跨机器仍需用户试用，DeepSeek不在此完成范围。
 
 依据：desktop-review-scope.md；用户已允许Electron运行时与打包工具项目本地安装。13已在b30b039验收。此票交付现有整局复盘的桌面宿主，不冒充DeepSeek讲解完成，也不顺带重写教学/棋规。
 
@@ -48,7 +50,7 @@ Execution: in-progress
 - `npm view electron@44.8.0 version engines --json`、`npm view electron-builder version engines --json`及26.15.3 tarball元数据已由主代理读取。GitHub猜测v26.15.3 raw tag地址返回404，不作为源码证据。
 - 更早公开预研见14-electron-preflight.md；本文在版本/签名选项等冲突处优先。最初尚无本项目桌面安装/打包/运行成功证据；候选及主代理复测后续见14-implementation-log.md，最终验收未完成。
 
-## 审查确认的边界补充（待修复）
+## 审查确认的边界补充（已修复并验收）
 
 主代理已核实独立双审查指出的三个P2，候选3c54fe9虽然19桌面/110网页回归通过，仍不得据此标done：
 
@@ -57,3 +59,4 @@ Execution: in-progress
 - 正常关闭必须收到bootstrap在await bridge.close成功后发出的确认，并确认utility以0退出；异常退出、明确close失败消息和关闭超时分别报告，不能在quitting期间一概吞掉。避免未开始stop就产生无人处理的reject。
 - 关闭失败保留窗口且默认不继续退出；用户若明确选择“退出应用（引擎回收未确认）”，才允许以失败退出码退出，并清楚保留未确认回收警告。不能将此兜底算正常关闭或宣称没有残留，也不能为通过测试私自杀其他进程。优先展示明确错误，不把错误只留stderr或退化成笼统超时。
 - 三项均通过真实打包exe的界面/原生菜单及外部I/O故障注入做实际RED→GREEN，正常19测试与110网页语义回归保留；不mock生命周期或添加renderer业务侧通道。
+- 追加的首窗前桥失败P2也已修复：无窗口时先以原安全窗口设置加载主进程固定纯静态中文data错误页，meta CSP default-src 'none'，不插入外部异常/路径HTML，不开放renderer接口或网络导航；再显示默认保留警告。默认保留后仍有可见窗口及原生菜单，可再次明确选择退出1，避免无界面进程残留。该页仅为坏桥错误兜底，不依赖本地服务，不放宽正常生产origin。
