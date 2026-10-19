@@ -7,6 +7,7 @@ import {result, type Position} from './position';
 import type {EngineResult} from '../src/engine';
 type Pending={position:Position; resolve:(r:EngineResult)=>void; reject:(e:Error)=>void; cancelled:boolean; sent:boolean; timer?:NodeJS.Timeout; status:(s:string)=>void};
 export class KataGo {
+ isCurrentSession(session:string):boolean {return this.ready&&!this.closing&&!!this.child&&this.child.exitCode===null&&this.child.signalCode===null&&session===this.serviceInstance+':'+this.generation;}
  private child?:ChildProcess;
  private pending=new Map<string,Pending>();
  private acknowledgements=new Map<string,{target:string;timer:NodeJS.Timeout}>();

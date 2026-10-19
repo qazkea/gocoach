@@ -2,7 +2,9 @@ import {useEffect,useRef,useState} from 'react';
 import type {Replay} from './replay';
 import {gtp,type EngineResult} from './engine';
 import {analyze} from './analyze';
-type CachedResult=EngineResult&{candidateCount:number};
+import type {AnalyzedResult} from './evidence';
+import {ReviewEvidence} from './ReviewEvidence';
+type CachedResult=AnalyzedResult&{candidateCount:number};
 export function FullGameReview({game,step,onStep,autoScan}:{game:Replay;step:number;onStep:(n:number)=>void;autoScan:boolean}) {
  const identity=useRef<Pick<EngineResult,'engineSession'|'profile'|'komi'|'bonus'>|undefined>(undefined);
  const [sessionNotice,setSessionNotice]=useState('');
@@ -66,6 +68,7 @@ export function FullGameReview({game,step,onStep,autoScan}:{game:Replay;step:num
   <ol aria-label="逐手局面" style={{maxHeight:220,overflow:'auto'}}>{game.frames.map((_,i)=><li key={i}><button aria-label={`定位第 ${i} 手`} aria-current={i===step?'step':undefined} onClick={()=>onStep(i)}>第 {i} 手</button> {results[i]?`成功；黑胜率 ${(results[i]!.root.winrate*100).toFixed(2)}%；目差 ${results[i]!.root.scoreLead.toFixed(2)}`:inFlight===i?'分析中':failure?.index===i?'失败':'待处理'}</li>)}</ol>
   <p>行棋前后估值变化 P[k−1]→P[k]，不是严格最优手损失或因果证明；100 visits / 2秒低预算会波动，不自动判恶手或教学价值。</p>
   <p>{step===0?'初盘没有上一手变化':current&&previous?`${sign===1?'黑':'白'}手：胜率下降 ${(sign*(previous.root.winrate-current.root.winrate)*100).toFixed(2)} 百分点；目差下降 ${(sign*(previous.root.scoreLead-current.root.scoreLead)).toFixed(2)} 目`:'前后局面尚未齐全，不计算差值'}</p>
+  <ReviewEvidence key={`${step}:${current?.evidenceId}:${previous?.evidenceId}:${failure?.message??''}`} game={game} step={step} after={current} before={previous}/>
   {current&&<div aria-label="逐手引擎结果">
    <p>第 {step} 手后，轮{game.frames[step].nextPlayer==='B'?'黑':'白'}的下一手候选（不是本手落子前推荐）</p>
    <p>{current.engine}；模型：{current.model}；计算 profile：{current.profile}；贴目：{current.komi}；whiteHandicapBonus：{current.bonus}</p>
