@@ -12,6 +12,8 @@
 
 **Execution:** pending
 
+实施授权更新：用户已同意继续官方API接入的本机安全配置、按需解释/缓存及预算保护开发；先执行[实施顺序](../deepseek-integration-plan.md)和15本地证据切片。仍未授权读取Key、真实外发或付费，真实10验收保持pending。
+
 ## Acceptance criteria
 
 - [ ] 在另获授权后，从网页当前局面发起真实在线 AI 讲解及追问，使用真实引擎证据形成对应中文教学，不仅检查请求成功。
