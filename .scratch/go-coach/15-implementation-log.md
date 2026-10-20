@@ -1,6 +1,6 @@
 # 15：本地服务端讲解依据实施记录
 
-Execution: in-progress
+Execution: done（主代理后续验收43d955b，见15-main-acceptance.md；下文保留实施阶段的待审历史记录）
 
 基线：`c3b228dd3fd041cae8e432f260c7c3c9d63e9421`。隔离实现树：`C:/Users/789/AppData/Local/Temp/pi-agent-f88dedf5-bf81-476-e3d0bda0`。本记录不代表独立审查或主代理验收完成。
 

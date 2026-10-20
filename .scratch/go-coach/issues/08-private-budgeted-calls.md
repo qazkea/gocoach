@@ -6,11 +6,11 @@
 
 **What to build:** 用户从桌面复盘页面（早期范围为浏览器）发起教学请求时，在任何获准联网或付费分析及 AI 外发前获得隐私、授权和月度预算保护；不能安全发送时停用并说明原因。
 
-**Blocked by:** 15：服务端讲解依据。按新版桌面按需讲解顺序，先保护后真实请求，不再等待整个05自由文本追问；具体见[实施顺序](../deepseek-integration-plan.md)。
+**Blocked by:** 15：服务端讲解依据（已完成，见15-main-acceptance.md）。按新版桌面按需讲解顺序，先保护后真实请求，不再等待整个05自由文本追问；具体见[实施顺序](../deepseek-integration-plan.md)。
 
 **Status:** ready-for-agent
 
-**Execution:** pending
+**Execution:** in-progress（分片A离线密码窗；分片B授权/预算未实施，以下整票条件尚未完成）
 
 ## 最新开发决定（覆盖下文历史“仅建票/未授权实施”措辞）
 

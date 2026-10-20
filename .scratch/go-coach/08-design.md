@@ -1,6 +1,6 @@
 # 08：本机密钥与预算保护设计
 
-Execution: pending（15验收后分片实施；本文件不表示整票完成）
+Execution: in-progress（15已验收，先实施分片A离线凭据配置；分片B未派发，整票未完成）
 
 ## 已确认与未授权边界
 
@@ -11,7 +11,7 @@ Execution: pending（15验收后分片实施；本文件不表示整票完成）
 
 ## 分片A：离线本机凭据配置（下一实施范围）
 
-目标是安全配置入口及诚实的“未启用在线讲解”，不是通过保存Key自动验证账户、充值或生成讲解。依赖15最终验收；实施前须以最新整合基线派发。预计文件：desktop/credentials.mjs及明确列举的desktop/credentials/静态页面、脚本、样式和preload.cjs，main菜单/生命周期连接，package.json精确打包白名单，真实exe测试。禁止扩大普通renderer Node/IPC能力。
+目标是安全配置入口及诚实的“未启用在线讲解”，不是通过保存Key自动验证账户、充值或生成讲解。依赖15最终验收，已由43d955b及15-main-acceptance.md解除；实施以包含该验收记录的最新整合基线派发。预计文件：desktop/credentials.mjs及明确列举的desktop/credentials/静态页面、脚本、样式和preload.cjs，main菜单/生命周期连接，package.json精确打包白名单，真实exe测试。禁止扩大普通renderer Node/IPC能力。
 
 ### 窗口与IPC
 

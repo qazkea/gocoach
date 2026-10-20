@@ -1,6 +1,6 @@
 # 15：服务端讲解依据与桌面本地核对
 
-Execution: in-progress
+Execution: done（43d955b；证据与未覆盖范围见15-main-acceptance.md）
 
 基线945bb7d（14已验收）。依据desktop-review-scope.md与deepseek-integration-plan.md。用户同意继续接入官方DeepSeek；本票为必要的本地可信证据切片，不读Key、不发送在线请求、不生成AI策略、不计真实费用，不冒充05/08/10全部完成。
 

@@ -24,10 +24,11 @@ Windows PowerShell 可使用 `npm.cmd` / `npx.cmd`。开发服务仅监听 `127.
 回放区域可聚焦；左右方向键前后浏览，Home/End 到起始/末尾。每个棋盘点提供
 SGF 坐标与黑/白/空的可访问名称（aa 左上，ss 右下，先列后行）。
 
-## Windows 免安装目录包（任务14，本机验收完成）
+## Windows 免安装目录包（任务14＋15，本机验收完成）
 
-本机已验收的完整目录：`D:/code/tmp/go-coach-desktop/windows-x64-fa3a620/`，双击其中 `Go Coach.exe`。
-主代理30项真实桌面测试、110项网页回归及真实KataGo合成9局面通过；[验收记录](.scratch/go-coach/14-main-acceptance.md)列明工件摘要和未测范围。
+最新完整目录：`D:/code/tmp/go-coach-desktop/windows-x64-43d955b-main/`，双击其中 `Go Coach.exe`。
+主代理32项真实桌面测试、133项网页回归及真实KataGo合成9局面/9次逐手依据核对通过；[15验收记录](.scratch/go-coach/15-main-acceptance.md)列明工件摘要和未测范围。
+旧`windows-x64-fa3a620/`及[14验收记录](.scratch/go-coach/14-main-acceptance.md)保留。
 
 开发构建机需要 Node 24 / npm 11；锁定 Electron **44.8.0**、electron-builder **26.15.3**，只在项目安装：
 
@@ -88,6 +89,19 @@ npm.cmd test -- tests/full-game.spec.ts
 
 [13实施记录](.scratch/go-coach/13-implementation-log.md) 记录RED→GREEN、回归、截图及未覆盖项。
 真实GPU合成短谱整局验收由主代理在整合后另行执行；没有跑完2000局面的性能承诺。
+
+## 查看本手讲解依据（任务15，本地功能）
+
+整局扫描获得当前手及前一局面后，点击“查看本手讲解依据”。初盘不要求前一局面。
+服务端核对完整历史和引擎会话，展示实际手/pass、提子、落子后己链的气，以及落子前/后分别属于谁的候选与估值。
+这些是可核验事实和低预算估值，**不是DeepSeek中文策略解释**；估值不是原因，PV不是必然，气数不是活棋证明。
+
+依据引用仅本机服务内存保存，最多2000条/64MiB序列化payload/签发后2小时，读取不续期；不会自动重算。
+打开详情后仅订阅本地会话状态，失效、断流或浏览器offline信号到达便清除；切手/换谱也取消旧请求，晚响应不能复活。
+过期需重新导入分析。观察/查询不启动GPU或AI，不接受客户端估值冒充依据；未打开时不建立订阅。
+静默网络阻塞时无法保证即时感知；64MiB边界等未动态覆盖项见验收记录，不承诺总RSS上限。
+
+密钥窗口、¥50预算保护和按需中文解释仍在后续开发；本包不含Key配置，也没有付费请求。
 
 ## 清爽木质棋盘
 
