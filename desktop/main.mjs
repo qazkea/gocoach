@@ -20,7 +20,7 @@ async function quit() {
  if(quitting)return quitting;
  quitting=(async()=>{
   menu();
-  try {await credentials?.suspend();await stop();exiting=true;app.quit();}
+  try {credentials?.suspend();await stop();exiting=true;app.quit();}
   catch(error){
    const failedBeforeWindow=!window;
    if(failedBeforeWindow){

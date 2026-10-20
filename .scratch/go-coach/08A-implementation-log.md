@@ -70,3 +70,49 @@ Execution: in-progress（仅实现候选，待独立双审及主验收；08整�
 每测试记录精确PID/创建时间的所有权及退出；最终完整回归正常退出0，既有故障注入场景明确退出1。fixture回收survivors均空；额外`process-audit-offline.json`汇总历史所有权身份，无存活匹配进程。没有按端口或进程名查杀。fixture自建目录在结束后删除，证据、候选及此worktree保留供审查。5193已释放。
 
 独立审查和主代理验收尚未进行，尤其需要复核上述背景网络发现及精确持久写/关闭边界。没有把本片宣称为预算保护完成、DeepSeek接通或08整票done。
+
+## 生命周期 P2 修复候选（基线 6ce9d219，保留以上历史）
+
+### 主代理发现与范围
+
+主代理对 `0a3359c` 的自行打包复跑虽为41桌面全绿，但外部 safeStorage.encryptStringAsync completion 暂停后，保存合成Key再原生退出，12.5秒仍存活；只有释放OS回调才退出0。证据 `D:/code/tmp/go-coach-notes/credentials-08A/main-hung-encryption.mjs` 及 `main-hung-encryption/result.json`。此前双审 `e7d24132` / `d0087de7` 未识别此阻断；上述历史的“退出等待在途操作”和“OS无限不返回未覆盖”不再是可接受的产品行为。
+
+本次基线 `6ce9d219496f6e0d5ebdf8a75074ca95a473f368`，独立树 `C:/Users/789/AppData/Local/Temp/pi-agent-2fe76a53-66be-48c-8924ede2`，分支 `implementer/08A-lifecycle-2fe76a53`。仅凭据生命周期/期限及对应测试；无08B、AI、预算、真实Key、账户、GPU或真实operator操作，没有安装/下载、push或发布。node_modules从既有安装复制；使用原本机Electron缓存。旧包及主源码未修改。
+
+### 实现
+
+- `desktop/credentials.mjs`以单个operation身份、epoch、invalid、writing管理工作。OS与恢复读取共用真实10秒操作期限；超时不宣称取消底层Promise。尚未写入时立即释放门禁，旧finally只清自己的operation；每个OS/读写await后检查身份，迟到成功/失败均不能覆盖新状态。
+- `suspend()`同步失效并关密码窗；`desktop/main.mjs`只移除对它的await，立即进入原有stop/close/closed/exit流程。凭据失败不进入“引擎回收未确认”错误通道，14原有异常语义不变。
+- 已开始文件变更时保留排他门禁直至本次finally收尾。取消/10秒后菜单显示“密钥操作尚未完成，请等待或重启应用”，保存/删除不能交错；writeFile/sync/close后和rename前均再检查。已派发rename可能实际提交，只报告不可用，不虚称撤回或成功。存活进程能收尾时清理本次tmp，保留原凭据（除已派发rename确实完成）。
+- 恢复读取结束先关闭只读handle再decrypt；期限触发还会请求关闭已有只读handle，但不等待其完成。避免Windows上旧恢复handle占住文件而使新配置不能替换。迟到open/read最终也只清理自己的handle。
+- 删除确认对话框不计入OS操作期限；用户确认后才开始10秒期限。删除仍仅触及凭据，不触及未知费用或历史。
+- 新增 `desktop-tests/credentials-lifecycle.spec.ts` 与仅供临时测试包使用的 `credential-delay-platform.mjs`。只包装Electron safeStorage与Node fs/FileHandle平台完成；不mock persist或其他业务函数，不增加产品testhook/window API，平台适配文件不在打包白名单。
+
+### TDD、失败与修正
+
+证据目录：`D:/code/tmp/go-coach-notes/credentials-08A/lifecycle-fix/2fe76a53/`。
+
+1. 先写OS加密不返回＋已启动外部C#引擎的真实exe关闭测试。`red.log`在基线实际失败：5秒后exitCode仍null，fixture随后也因原退出阻塞超时。最小改为非等待suspend后 `green1.log`通过，包括真实close/closed、exit0、身份核对无进程残留、没有生成credentials.json。
+2. 随后扩展取消/新操作、恢复期限及精确IO阶段测试。`red2.log`是Windows `.cmd` 对含竖线grep参数的解析错误，**没有执行测试，不算RED**。`green2.log`为初步5项通过；不声称每个身份保护分支均曾单独RED。
+3. `green3.log`是新增测试括号语法错误，修正后 `green4.log`实际10通过/5失败：decrypt/read超时后新保存被旧恢复只读handle妨碍；以及rename平台替身误拦了operator配置的tmp。前者通过提前关闭恢复handle及超时请求关闭修复；后者精确限制到credentials临时文件，不改产品引擎配置。`green5.log`15/15通过。
+4. 最终加强了OS旧操作完成的显式外部观察，以及恢复超时后新保存成功再释放**失败**的旧available/decrypt/read completion，证明迟到错误不能把新状态改为不可用。没有用业务状态或内部函数排序。
+
+### 最终验证（无跳过）
+
+- `npm.cmd run typecheck`：通过，最后 `typecheck-final3.log`。
+- `npm.cmd run build`：通过，`build-final2.log`（含tsc/Vite/server）。
+- `electron-builder --win --x64 --dir --publish never --config.electronDist=D:/code/tmp/go-coach-notes/evidence-15/sqlite-preflight/runtime`：通过，`pack-final2.log`，未下载。
+- 自有5193在启动前检查空闲，`GO_COACH_TEST_PORT=5193 npm.cmd test -- --workers=4`：**133/133通过**，`web-final.log`；与build/pack串行。未操作5173，结束检查5193已释放。
+- 最终持久候选设 `DESKTOP_TEST_EXE`，`playwright test -c playwright.desktop.config.ts`：**56/56通过、0跳过**，`candidate-final2.log`及 `candidate-final2/`。保留原32桌面＋9凭据/网络测试，新增15生命周期测试。此前完整 `desktop-final.log` / `candidate-final.log`也为56通过，最终证据以final2为准。
+- 新15项：永不返回encrypt正常引擎回收；取消旧encrypt新保存与旧finally不释放新busy；available/decrypt/read各真实10秒后本地回放及新保存、迟到失败隔离；writeFile/sync/rename各取消、超时后失败、未释放时主退出；保存encrypt超时后新保存及迟到成功隔离。
+- 精确IO测试验证取消/超时期间保存删除均禁用，未派发rename时旧文件不变，已派发rename释放后可提交但不报成功，最终tmp清理。quit场景不释放外部文件完成，仍真实引擎close/closed、exit0、所有已记录身份退出。
+- 旧真实DPAPI正例、拒绝型代理/禁字典下载、安全隔离、预算历史哨兵以及14各明确非零退出继续通过。仍不宣称历史全程零外网，也不把代理观测当全协议网络抓包。
+- `git diff --check`通过。`process-audit.json`基于3444条累计PID/创建时间/路径记录检查，最终匹配存活为空、此次audit无需清理；正常场景exit0，14故障场景按原规格明确exit1。最初RED有teardown超时，不能当正常退出证明。
+
+### 新候选与未覆盖边界
+
+新候选完整目录 `D:/code/tmp/go-coach-desktop/candidate-08A-lifecycle-2fe76a53-20261021/`，入口 `Go Coach.exe`。96文件、386593684字节；`candidate-manifest.json`逐文件确认与最终win-unpacked字节一致并记录SHA-256。不覆盖任何旧candidate或windows-x64-43d955b-main。
+
+不返回的OS Promise本身仍可能保留资源至退出；不声称OS取消或内存抹除。文件操作不返回时正常应用退出可能留下仅含密文/空内容的本次tmp，无法承诺进程退出后还能执行finally；没有扫描删除其他历史tmp。未单独注入mkdir/open/close/unlink永久挂起、真实内核磁盘死锁、断电、跨账户/机器、OS关机或主进程强杀；精确writeFile/sync/rename测试是外部平台完成门，不冒充真实磁盘故障。人工系统dialog/SmartScreen仍未验证。本次没有增加真实Key或AI/费用测试。
+
+本节仍是**待独立双审及主代理验收的修复候选**，不把08或08A标done。
