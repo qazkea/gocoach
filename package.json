@@ -10,7 +10,7 @@
     "productName": "Go Coach",
     "asar": false,
     "directories": {"output": "desktop-release"},
-    "files": ["desktop/*.mjs", ".server/*.js", "dist/**/*", "package.json", "!node_modules/**/*"],
+    "files": ["desktop/main.mjs", "desktop/bootstrap.mjs", "desktop/config.mjs", "desktop/credentials.mjs", "desktop/credentials/index.html", "desktop/credentials/form.js", "desktop/credentials/style.css", "desktop/credentials/preload.cjs", ".server/*.js", "dist/**/*", "package.json", "!node_modules/**/*"],
     "win": {"signExecutable": false, "signAndEditExecutable": false},
     "npmRebuild": false
   },

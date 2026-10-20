@@ -12,7 +12,8 @@ test('完整目录移动至中文空格只读位置，从异 cwd 运行并扫描
   execFileSync('icacls.exe',[moved,'/deny',`*${sid}:(OI)(CI)(WD,AD)`],{windowsHide:true});
   await expect(writeFile(join(moved,'must-not-write.txt'),'probe')).rejects.toThrow();
   expect((await readdir(join(moved,'resources/app'))).sort()).toEqual(['.server','desktop','dist','package.json']);
-  expect((await readdir(join(moved,'resources/app/desktop'))).sort()).toEqual(['bootstrap.mjs','config.mjs','main.mjs']);
+  expect((await readdir(join(moved,'resources/app/desktop'))).sort()).toEqual(['bootstrap.mjs','config.mjs','credentials','credentials.mjs','main.mjs']);
+  expect((await readdir(join(moved,'resources/app/desktop/credentials'))).sort()).toEqual(['form.js','index.html','preload.cjs','style.css']);
   const run=await desktop.launch({exe:join(moved,'Go Coach.exe')});
   await desktop.select(run,desktop.operator);await upload(run.page);
   await expect(run.page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');

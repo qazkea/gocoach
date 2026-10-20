@@ -1,6 +1,8 @@
-import {app, BrowserWindow, Menu, dialog, utilityProcess} from 'electron';
+import {app, BrowserWindow, Menu, dialog, utilityProcess, session} from 'electron';
 import {join} from 'node:path';
 import {readOperator,prepareOperator,restoreOperator,rememberOperator} from './config.mjs';
+import {createCredentials} from './credentials.mjs';
+let credentials;
 let child, window, origin='', approved, notice='', selecting=false, starting=false, exiting=false, quitting;
 async function stop() {
  const active=child;
@@ -18,7 +20,7 @@ async function quit() {
  if(quitting)return quitting;
  quitting=(async()=>{
   menu();
-  try {await stop();exiting=true;app.quit();}
+  try {await credentials?.suspend();await stop();exiting=true;app.quit();}
   catch(error){
    const failedBeforeWindow=!window;
    if(failedBeforeWindow){
@@ -28,7 +30,7 @@ async function quit() {
    const options={type:'warning',title:failedBeforeWindow?'启动失败，退出未完成':'退出未完成',message:error.message,detail:'不能确认引擎回收。默认保留窗口，不自动重启服务。强行退出不代表引擎已安全回收。',buttons:['保留窗口','退出应用（引擎回收未确认）'],defaultId:0,cancelId:0,noLink:true};
    const answer=await (window?dialog.showMessageBox(window,options):dialog.showMessageBox(options));
    if(answer.response===1){exiting=true;app.exit(1);}
-  } finally {if(!exiting){quitting=undefined;menu();}}
+  } finally {if(!exiting){quitting=undefined;credentials?.resume();menu();}}
  })();
  return quitting;
 }
@@ -36,7 +38,7 @@ app.on('before-quit',event=>{if(!exiting){event.preventDefault();void quit();}})
 app.on('window-all-closed',()=>void quit());
 
 async function choose() {
- if(selecting||starting||quitting||child?.error)return;
+ if(selecting||starting||quitting||child?.error||credentials?.engaged)return;
  selecting=true;menu();
  try {
   const selected=await dialog.showOpenDialog(window,{title:'选择已有本地引擎配置',filters:[{name:'JSON 配置',extensions:['json']}],properties:['openFile']});
@@ -57,12 +59,13 @@ async function choose() {
 }
 function menu() {
  Menu.setApplicationMenu(Menu.buildFromTemplate([
-  {label:'引擎',submenu:[{label:notice||(approved?'已配置本地引擎':'未配置本地引擎（仍可回放）'),enabled:false},{label:'选择本地配置…',enabled:!starting&&!selecting&&!quitting&&!child?.error,click:()=>choose()}]},
-  {label:'文件',submenu:[{label:'退出',click:()=>quit()}]}
+  {label:'引擎',submenu:[{label:notice||(approved?'已配置本地引擎':'未配置本地引擎（仍可回放）'),enabled:false},{label:'选择本地配置…',enabled:!starting&&!selecting&&!quitting&&!child?.error&&!credentials?.engaged,click:()=>choose()}]},
+  {label:'文件',submenu:[{label:'退出',click:()=>quit()}]},
+  ...(credentials?[{label:'讲解',submenu:credentials.items}]:[])
  ]));
 }
 function createWindow() {
- window=new BrowserWindow({width:1280,height:900,title:'围棋赛后复盘教练',webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true}});
+ window=new BrowserWindow({width:1280,height:900,title:'围棋赛后复盘教练',webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,spellcheck:false}});
  window.on('close',event=>{if(!exiting){event.preventDefault();void quit();}});
  const contents=window.webContents;
  const permitted=url=>{try{return !!origin&&new URL(url).origin===origin;}catch{return false;}};
@@ -127,6 +130,11 @@ async function start(config='') {
  } finally {starting=false;menu();}
 }
 app.whenReady().then(async()=>{
+ // Chromium dictionary downloads are not part of offline review or credential configuration.
+ session.defaultSession.setSpellCheckerLanguages([]);
+ session.defaultSession.setSpellCheckerEnabled(false);
+ credentials=createCredentials({parent:()=>window,canOpen:()=>!!window&&!starting&&!selecting&&!quitting&&!child?.error,changed:menu});
+ await credentials.restore();
  const restored=await restoreOperator(app.getPath('userData'));
  approved=restored.approved;notice=restored.notice??'';
  await start(approved?await prepareOperator(approved,app.getPath('userData')):'');
