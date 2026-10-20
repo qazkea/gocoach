@@ -1,6 +1,6 @@
 # 08A 离线本机凭据：实现候选记录
 
-Execution: in-progress（仅实现候选，待独立双审及主验收；08整票不完成）
+Execution: done（仅08A，主代理验收a1cd762见08A-main-acceptance.md；以下保留各候选阶段历史，08整票不完成）
 
 ## 范围与隔离
 

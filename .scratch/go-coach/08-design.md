@@ -1,6 +1,6 @@
 # 08：本机密钥与预算保护设计
 
-Execution: in-progress（15已验收，先实施分片A离线凭据配置；分片B未派发，整票未完成）
+Execution: in-progress（分片A已验收a1cd762，见08A-main-acceptance.md；分片B未派发，整票未完成）
 
 ## 已确认与未授权边界
 
@@ -9,7 +9,7 @@ Execution: in-progress（15已验收，先实施分片A离线凭据配置；分�
 - 具体模型、外发字段、政策风险接受及真实传输/费用仍待确认。合成Key、隔离userData、外部平台替身测试允许；真实Key不进入聊天/代理工具/日志。
 - 研究见[桌面安全预检](08-desktop-security-preflight.md)。主代理另查本地Electron44.8.0类型：encryptStringAsync返回Buffer，decryptStringAsync返回{result,shouldReEncrypt}。主代理已在既有缓存Electron44.8.0的独立main/utility无数据库探针中验证node:sqlite可导入及DatabaseSync存在；产品打包入口、事务/耐久仍未验证，不据版本号或模块存在直接作预算保证。
 
-## 分片A：离线本机凭据配置（下一实施范围）
+## 分片A：离线本机凭据配置（已完成本机验收）
 
 目标是安全配置入口及诚实的“未启用在线讲解”，不是通过保存Key自动验证账户、充值或生成讲解。依赖15最终验收，已由43d955b及15-main-acceptance.md解除；实施以包含该验收记录的最新整合基线派发。预计文件：desktop/credentials.mjs及明确列举的desktop/credentials/静态页面、脚本、样式和preload.cjs，main菜单/生命周期连接，package.json精确打包白名单，真实exe测试。禁止扩大普通renderer Node/IPC能力。
 
