@@ -7,7 +7,7 @@ Execution: pending（15验收后分片实施；本文件不表示整票完成）
 - 用户已授权继续官方DeepSeek集成开发，并选择**独立密码窗口**，而非导入明文文件。此为配置功能开发选择，不是让代理读取现有Key或立即调用API。
 - 月度新增服务预算目标为¥50；主业务复盘renderer不能读取已保存的Key。
 - 具体模型、外发字段、政策风险接受及真实传输/费用仍待确认。合成Key、隔离userData、外部平台替身测试允许；真实Key不进入聊天/代理工具/日志。
-- 研究见[桌面安全预检](08-desktop-security-preflight.md)。主代理另查本地Electron44.8.0类型：encryptStringAsync返回Buffer，decryptStringAsync返回{result,shouldReEncrypt}。本机main/utility SQLite可用性尚未验证，不据Node版本直接作实现承诺。
+- 研究见[桌面安全预检](08-desktop-security-preflight.md)。主代理另查本地Electron44.8.0类型：encryptStringAsync返回Buffer，decryptStringAsync返回{result,shouldReEncrypt}。主代理已在既有缓存Electron44.8.0的独立main/utility无数据库探针中验证node:sqlite可导入及DatabaseSync存在；产品打包入口、事务/耐久仍未验证，不据版本号或模块存在直接作预算保证。
 
 ## 分片A：离线本机凭据配置（下一实施范围）
 
@@ -42,7 +42,7 @@ Execution: pending（15验收后分片实施；本文件不表示整票完成）
 
 ## 分片B：授权与持久预算（尚待细化，不派发实现）
 
-- 在实际main/utility/打包运行时只读验证node:sqlite可用后，再决定SQLite事务账本；无新原生依赖安装。若不可用，返回设计讨论，不临时改成无事务文件“硬保护”。
+- 独立main/utility的node:sqlite模块可用性已做无数据库探针；仍须在产品打包运行时验证后，再决定SQLite事务账本并验收事务/恢复；无新原生依赖安装。若不可用，返回设计讨论，不临时改成无事务文件“硬保护”。
 - main持凭据、固定官方HTTPS出口和账本；utility只传可信服务端重建的最小证据。无任意host/redirect、联网工具、自动重试；普通业务renderer仅传证据引用/选择，不传可信金额/usage/模型价格或Key。
 - 授权必须绑定模型及参数、提示/字段版本、政策提示版本、计价依据与预算范围；默认关闭。第一片仅结构化棋局证据，不发rawSGF/姓名/注释/文件名/自由文本/聊天历史；自由文本仍拒绝且不得宣布整票身份过滤完成。
 - 整数金额，事务内预留成功才允许发送。reserved→sent→settled/unknown，发送前必须持久化“可能已发送”；崩溃/超时/缺usage保持未知且不自动退款/重试。同userData单实例仅生命周期防线，预算争用仍由同一事务处理。

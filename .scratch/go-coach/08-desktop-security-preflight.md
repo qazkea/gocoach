@@ -33,9 +33,17 @@ Node 24.22 的 `node:sqlite` 是内置、无需实验开关，稳定度 **1.2 Re
 
 文件替代：排他锁→同目录唯一临时文件→完整写入/fsync→rename；Node 仅承诺 fsync 请求受 OS/设备影响、rename 替换目标，并未保证该组合在 Windows 断电下完成目录项耐久或多步骤事务。须自行设计恢复与不确定状态，复杂度高于 SQLite，不能把 rename 成功等同预算硬保证。[fs](https://nodejs.org/docs/v24.22.0/api/fs.html)
 
-## 最少后续动态验收（本次均未执行）
+## 研究代理列出的后续动态验收（下方另记主代理补充）
 
 1. 无写探针：实际 main/utility/打包产物的版本及 `node:sqlite` 导入/`DatabaseSync` 存在；不创建数据库。
 2. 获准隔离测试目录后：合成 Key ready 前后、异步 round-trip、不可用/坏密文/写失败；跨用户迁移失败不得重置预算。
 3. 双启动：同目录、不同目录、不同安装位置、退出被取消/强杀；同库并发只能有预算允许的预留。
 4. 假出口前后崩溃、COMMIT/BUSY/磁盘失败、WAL恢复；unknown 不退款。若选密码窗，另验恶意 iframe、业务窗伪造、导航与重复提交。测试不使用真实 Key/账户/推理，不新增安装或收费。
+
+## 主代理后续无数据库探针（2026-10-20，本机时钟）
+
+- 使用既有本机缓存electron-v44.8.0-win32-x64.zip解压到独立证据目录，不重新下载/安装，不改已交付应用。最初误用node_modules/electron/dist/electron.exe不存在，Start-Process失败，没有启动进程；此为探针路径错误，不是产品/SQLite失败。
+- 独立Electron主进程及其utility均实际import('node:sqlite')成功、DatabaseSync为function；实测Electron44.8.0/Node24.22.0/SQLite3.53.4。主进程在ready后isAsyncEncryptionAvailable()为true。
+- 仅使用本次新建isolated-profile；未构造DatabaseSync/创建账本、未encrypt/decrypt任何Key、未访问账户/引擎/推理。OS会创建独立Electron profile元数据，不宣称完全无磁盘写入。
+- 最终Node父探针记录main PID25360 exit0、signal null、forced false；utility exit0。之后没有命令行匹配此探针目录的进程存活。第一次PowerShell未捕获main exitCode，未据此报退出码；随后改用Node父进程明确记录。
+- 证据：D:/code/tmp/go-coach-notes/evidence-15/sqlite-preflight/{probe.mjs,utility.mjs,result.json,exit.json}。仍未验证产品打包入口、SQLite事务/争用/恢复、实际加密round-trip或账本耐久。只能据此排除“当前Electron开发runtime不提供sqlite模块”，不能宣布预算实现已可用。
