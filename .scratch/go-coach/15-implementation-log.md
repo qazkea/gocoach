@@ -68,6 +68,44 @@ Execution: in-progress
 - **64MiB总payload淘汰与单条超限未动态触达**，只作静态边界实现，不冒称测试通过。没有JS RSS硬上限承诺。
 - 未模拟OS单调时钟自身回退；生产用performance.now而非Date.now。2h由外部平台时间推进，不是实际等待2h。
 - 没有动态构造“最终合法结果刚完成而在HTTP签发前session失效”微任务竞态；代码在issue再次核对session，取消/坏输出/死亡查询已有公开测试。
-- UI不轮询engine session，远端死亡不会在浏览器无事件时主动推送；查询时拒绝旧证据，扫描已知失败/新session结果会清旧详情。这沿用无新增轮询/引擎调用的范围。
+- 原139fc4f候选没有主动session推送，无法清除同手已显示或在途详情；这是复审确认的P2，不是可接受的范围限制。下述session修复已增加按需观察，仍待独立审查。
 - 未跑真实KataGo/GPU；主代理后续授权验证。未读取用户Key/实际operator、未在线推理/发棋局/付费、未装依赖、未push或发布。仅合成谱。
 - 未完成独立Spec/Standards及主代理整合复测；task15保持in-progress，不标05/08/10完成。整体仍不是DeepSeek中文教练。
+
+## session P2中断恢复（2026-10-19）
+
+恢复目录 `C:/Users/789/AppData/Local/Temp/pi-agent-e796e2f4-f48e-47d-8e5cbf7b`，基线d10d3da；先从detached HEAD建立 `fix/task15-session-recovery` 保留既有4文件未提交修改，无reset、无新worktree。主工作区业务未修改。原01/02证据不覆盖。
+
+### 实现与公开契约
+
+- KataGo公开observeSession同步首条有效身份/null，在ready/fail/close/generation变化发布；不启动引擎、不查询GPU、不改EngineResult/预算/事实或回收协议。
+- `/api/engine-session-watch`严格空JSON、原Host/Origin/CSRF/64KiB校验、同源NDJSON/no-store，16连接上限与429；响应close解除observer，serverclose结束全部观察。
+- 查看才连接；首条匹配refs才取证。持续观察null/不同session/坏协议/断流时abort并清数据，epoch阻止旧响应复活；首包10秒期限、切手/换谱卸载释放。浏览器offline事件可先于idle reader拒绝，故同时监听原生offline并清除；abort解除该事件监听。无自动轮询/重启或GPU查询。
+- 保留原详情JSON接口和桌面同源限制，仅旧桌面请求白名单加入明确新增watch路径。
+
+### 验证与失败（证据根 `D:/code/tmp/go-coach-notes/evidence-15/session-fix/`）
+
+- 前代理 `01-*` / `02-*` 原RED→GREEN保留；本次从真实文件接续，未视其为完整验收。
+- `03-recovery-watch.log`：9/9专项通过；严格字段/安全/大小/方法、16名额/关闭释放、未配置serverclose、ready/null/restart流、已生成HTTP延迟交付后失效、初始null不取证、坏帧/未完成尾行/连接失败/首包超时。
+- `05-watch-expanded.log`：10通过/1失败。真实浏览器 `context.setOffline(true)` 后同手已显示详情未清除，不能依赖idle stream及时reject。新增offline平台事件处理，`06-watch-green.log`：11/11通过，保留原失败断言不skip；另含手动面板显式重启后旧refs仍失效，再看不增加分析。
+- `07-full-web.log`：`GO_COACH_TEST_PORT=5193 npm.cmd test -- --workers=4`，**133 passed / 0 failed / 0 skipped，3.1m**（原121＋恢复1＋新增11）。默认扫描无watch，查询/再看无新增引擎分析；切手/换谱晚响应原语义仍通过。
+- `08-build.log`、`09-pack.log`：完整build和builder成功。当前树electron包无dist，使用已存在的本机44.8.0 cache zip解到本树 `desktop-release/runtime`，`npm.cmd exec -- electron-builder --win --x64 --dir --publish never --config.electronDist=desktop-release/runtime`；无install、无下载/新依赖。所有build/pack与网页测试串行。
+- `10-desktop-red.log`：旧持久候选15-f88dedf5上加强后的同手死亡断言真实失败，残留第4手pass详情；不再用切手或重新查询替代即时清除，fixture正常退出。
+- `11-full-desktop.log`：新真实exe **32 passed / 0 failed / 0 skipped，2.1m**（原31加强1＋新增1）。新增桌面真实成功HTTP延迟→外部杀引擎→失效→放行旧response→另一手动面板重启→旧refs不恢复。新增两项均正常exit0，末端引擎survivors为空。
+- `04-typecheck.log`、`12-final-typecheck.log`以及build内tsc通过，git diff --check通过。最终追加本日志后diff-check发现EOF多余空行，提交前删除该空行并重新检查。
+- `13-persistent-candidate.log`：持久候选两项依据测试 **2/2通过**。`desktop-full/`与`desktop-persistent/`保留截图、engine-io、PID身份与exit.json。已实际读取持久包第3手截图确认黑提子/双方候选与棋盘显示。
+- 初次查找恢复树的技能文件失败（这些文件未进入旧基线），随后按主指定路径读取主repo的SKILL/tests/mocking文档；只读取文档不修改主业务。docs/adr不存在，未虚构ADR。路径查询失败不作产品RED。
+
+### 持久包与清理
+
+唯一新候选 `D:/code/tmp/go-coach-desktop/candidate-15-session-recovery-20261019/Go Coach.exe`，完整目录91文件、386,581,676字节；`candidate-recovery-manifest.json`逐文件SHA-256和字节比较证明与测试包相同，校验脚本 `check-candidate-recovery.mjs`。保留所有旧候选和fa3a620，不签名/发布。
+
+测试完成后自有5193无监听、本恢复树无存活业务进程；fixture按PID及唯一执行路径/创建时间确认所有自有引擎退出。只操作本次外部测试引擎，不停止非自有服务或5173。
+
+### 未覆盖与交回
+
+- 网络阻塞但未触发断流/offline时，不保证物理引擎变化同一瞬间可知；没有引入心跳或GPU探测。初始首包超时使用真实10秒等待，不改OS时钟。
+- 此次新增的坏帧/尾行故障由浏览器网络adapter注入；没有mock store/session/规则、没有window私有业务API。正常ready/失效/重启来自真实公开HTTP及外部引擎进程。
+- 既有64MiB/单条超限、OS单调时钟回退、HTTP签发微任务竞态仍未动态覆盖，不把本次回归当其通过。
+- 未跑真实GPU/AI、未读真实operator/Key、未安装/外发/计费/push；08仅合并主分支既有文档，不实施。
+- 独立Spec/Standards和主代理整合验收未完成，保持in-progress。

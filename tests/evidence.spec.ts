@@ -35,6 +35,17 @@ test('按需本地依据：初盘、黑提子己链三气、白pass与回看不�
  expect((await engineServer.observed()).filter(q=>!q.action)).toHaveLength(5);
 });
 
+test('同一手已展示依据在外部引擎死亡时立即清除，不再查询',async({page,engineServer})=>{
+ await page.goto(engineServer.url);await upload(page);
+ await expect(review(page)).toContainText('完成：5 / 5');
+ await review(page).getByRole('button',{name:'查看本手讲解依据'}).click();
+ await expect(details(page)).toContainText('初盘，没有实际上一手');
+ process.kill((await engineServer.pids()).at(-1)!);
+ await expect(details(page)).toHaveCount(0);
+ await expect(review(page)).toContainText('讲解依据已过期，请重新导入棋谱分析');
+ expect((await engineServer.observed()).filter(q=>!q.action)).toHaveLength(5);
+});
+
 test('公开HTTP拒绝伪造数值、错历史、错误前缀、规则贴目混用与安全请求',async({request,engineServer})=>{
  const api=await evidenceClient(request,engineServer.url);
  const a=(await api.analyze(initial)).result;

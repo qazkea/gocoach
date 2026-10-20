@@ -18,18 +18,60 @@ export function ReviewEvidence({game,step,after,before}:{game:Replay;step:number
  const [data,setData]=useState<EvidenceDTO>();
  const [status,setStatus]=useState('');
  const request=useRef<AbortController|undefined>(undefined);
- useEffect(()=>()=>request.current?.abort(),[]);
+ const epoch=useRef(0);
+ useEffect(()=>()=>{epoch.current++;request.current?.abort();},[]);
  const ready=!!after&&(step===0||!!before&&before.engineSession===after.engineSession&&before.profile===after.profile&&before.komi===after.komi&&before.bonus===after.bonus&&before.engine===after.engine&&before.model===after.model);
  async function load(){
   request.current?.abort();const controller=new AbortController();request.current=controller;
+  const attempt=++epoch.current;
+  const current=()=>attempt===epoch.current&&!controller.signal.aborted;
+  const fail=(message:string)=>{
+   if(!current())return;
+   epoch.current++;controller.abort();setData(undefined);setStatus(message);
+  };
+  // A browser offline event can precede rejection of an idle streaming read.
+  const offline=()=>fail('引擎会话观察失联，请重试');
+  window.addEventListener('offline',offline);
+  controller.signal.addEventListener('abort',()=>window.removeEventListener('offline',offline),{once:true});
   setData(undefined);setStatus('正在读取本地依据…');
+  let confirmed=false;
+  const deadline=setTimeout(()=>fail('引擎会话观察未就绪，请重试'),10000);
+  controller.signal.addEventListener('abort',()=>clearTimeout(deadline),{once:true});
   try{
    const auth=await fetch('/api/token',{signal:controller.signal}).then(r=>r.json());
-   const response=await fetch('/api/review-evidence',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':auth.token},body:JSON.stringify({position:engineInput(game,step),afterId:after!.evidenceId,...(step?{beforeId:before!.evidenceId}:{})}),signal:controller.signal});
-   const value=await response.json();
-   if(!response.ok)throw Error(value.error??'读取依据失败');
-   if(!controller.signal.aborted){setData(value);setStatus('');}
-  }catch(e){if(!controller.signal.aborted)setStatus((e as Error).message);}
+   const headers={'Content-Type':'application/json','X-CSRF-Token':auth.token};
+   const query=async()=>{
+    try{
+     const response=await fetch('/api/review-evidence',{method:'POST',headers,body:JSON.stringify({position:engineInput(game,step),afterId:after!.evidenceId,...(step?{beforeId:before!.evidenceId}:{})}),signal:controller.signal});
+     const value=await response.json();
+     if(!response.ok)throw Error(value.error??'读取依据失败');
+     if(current()&&confirmed){setData(value);setStatus('');}
+    }catch(e){fail((e as Error).message);}
+   };
+   const response=await fetch('/api/engine-session-watch',{method:'POST',headers,body:'{}',signal:controller.signal});
+   if(!response.ok||!response.body||!response.headers.get('content-type')?.startsWith('application/x-ndjson'))throw Error('引擎会话观察失联，请重试');
+   const reader=response.body.getReader(),decoder=new TextDecoder('utf-8',{fatal:true});
+   let buffer='';
+   try{
+    while(current()){
+     const part=await reader.read();
+     if(!current())break;
+     if(part.done)throw Error('引擎会话观察失联，请重试');
+     buffer+=decoder.decode(part.value,{stream:true});
+     if(buffer.length>65536)throw Error('引擎会话观察协议无效，请重试');
+     let i:number;
+     while((i=buffer.indexOf('\n'))>=0&&current()){
+      const line=buffer.slice(0,i);buffer=buffer.slice(i+1);
+      let value;
+      try{value=JSON.parse(line);}catch{throw Error('引擎会话观察协议无效，请重试');}
+      if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==1||!('engineSession' in value)||(value.engineSession!==null&&typeof value.engineSession!=='string'))throw Error('引擎会话观察协议无效，请重试');
+      if(value.engineSession!==after!.engineSession){fail('讲解依据已过期，请重新导入棋谱分析');break;}
+      if(!confirmed){confirmed=true;clearTimeout(deadline);void query();}
+     }
+    }
+   }finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+  }catch(e){fail((e as Error).message);}
+  finally{clearTimeout(deadline);}
  }
  return <div>
   <button disabled={!ready||status==='正在读取本地依据…'} onClick={()=>void load()}>查看本手讲解依据</button>

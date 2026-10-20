@@ -8,6 +8,23 @@ import type {EngineResult} from '../src/engine';
 type Pending={position:Position; resolve:(r:EngineResult)=>void; reject:(e:Error)=>void; cancelled:boolean; sent:boolean; timer?:NodeJS.Timeout; status:(s:string)=>void};
 export class KataGo {
  isCurrentSession(session:string):boolean {return this.ready&&!this.closing&&!!this.child&&this.child.exitCode===null&&this.child.signalCode===null&&session===this.serviceInstance+':'+this.generation;}
+ private sessionListeners=new Set<(session:string|null)=>void>();
+ private publishedSession:string|null=null;
+ observeSession(listener:(session:string|null)=>void):()=>void {
+  this.sessionListeners.add(listener);
+  listener(this.currentSession());
+  return ()=>{this.sessionListeners.delete(listener);};
+ }
+ private currentSession():string|null {
+  const session=this.serviceInstance+':'+this.generation;
+  return this.isCurrentSession(session)?session:null;
+ }
+ private publishSession() {
+  const session=this.currentSession();
+  if(session===this.publishedSession)return;
+  this.publishedSession=session;
+  for(const listener of this.sessionListeners)listener(session);
+ }
  private child?:ChildProcess;
  private pending=new Map<string,Pending>();
  private acknowledgements=new Map<string,{target:string;timer:NodeJS.Timeout}>();
@@ -61,7 +78,7 @@ export class KataGo {
   try {if(this.child||this.stopping)await this.stopChild();} catch {this.fail(Error('旧引擎尚未回收'));return;}
   if(this.closing) {this.starting=false;return;}
   const started=performance.now();
-  const generation=++this.generation;
+  const generation=++this.generation;this.publishSession();
   this.startup=setTimeout(()=>{this.fail(Error('引擎启动超时'));},600000);
   try {
    let executable:string, args:string[];
@@ -114,7 +131,7 @@ export class KataGo {
     for(const line of lines) {
      if(/\bwarning\b|\berror\b/i.test(line)) {this.fail(Error('引擎 warning/error，本次分析未完成'));return;}
      if(line.includes('Started, ready to begin handling requests')) {
-      clearTimeout(this.startup);this.ready=true;this.starting=false;
+      clearTimeout(this.startup);this.ready=true;this.starting=false;this.publishSession();
       if(!process.env.GO_COACH_TEST_ENGINE)console.log(`ENGINE ready seconds=${((performance.now()-started)/1000).toFixed(3)}`);
       for(const [id,p] of this.pending) this.submit(id,p);
      }
@@ -152,7 +169,7 @@ export class KataGo {
   } catch(e) {p.reject(e instanceof Error?e:Error('引擎响应无效'));}
  }
  private fail(error:Error) {
-  clearTimeout(this.startup);this.ready=false;this.starting=false;
+  clearTimeout(this.startup);this.ready=false;this.starting=false;this.publishSession();
   for(const p of this.pending.values()) {clearTimeout(p.timer);p.reject(error);}
   this.pending.clear();
   for(const a of this.acknowledgements.values()) clearTimeout(a.timer);
@@ -162,7 +179,7 @@ export class KataGo {
  }
  private stopChild():Promise<void> {
   if(this.stopping) return this.stopping;
-  const child=this.child;this.generation++;
+  const child=this.child;this.generation++;this.publishSession();
   if(!child || !child.pid || child.exitCode!==null || child.signalCode!==null) {
    this.child=undefined;return Promise.resolve();
   }
