@@ -14,7 +14,11 @@ function Analysis({title,value}:{title:string;value:EvidenceAnalysis}) {
 }
 // Parent keys this request lifetime by selection and evidence identities. Unmount
 // aborts I/O and guards late resolutions without retaining stale detail on render.
-export function ReviewEvidence({game,step,after,before}:{game:Replay;step:number;after?:AnalyzedResult;before?:AnalyzedResult}) {
+export function ReviewEvidence({game,step,after,before,variationOrigin}:{game:Replay;step:number;after?:AnalyzedResult;before?:AnalyzedResult;variationOrigin?:number}) {
+ const variation=variationOrigin!==undefined;
+ const label=variation?'试下讲解依据':'本手讲解依据';
+ const moveLabel=variation?'试下':'实际';
+ const candidateLabel=variation?'试下':'实战';
  const [data,setData]=useState<EvidenceDTO>();
  const [status,setStatus]=useState('');
  const request=useRef<AbortController|undefined>(undefined);
@@ -74,17 +78,18 @@ export function ReviewEvidence({game,step,after,before}:{game:Replay;step:number
   finally{clearTimeout(deadline);}
  }
  return <div>
-  <button disabled={!ready||status==='正在读取本地依据…'} onClick={()=>void load()}>查看本手讲解依据</button>
+  <button disabled={!ready||status==='正在读取本地依据…'} onClick={()=>void load()}>查看{label}</button>
   {!ready&&<p>当前所需前后分析尚未齐全，不自动补跑引擎。</p>}
   {status&&<p role="status">{status}</p>}
-  {data&&<section aria-label="本手讲解依据"><h3>本地讲解依据 · 第 {data.step} 手</h3>
+  {data&&<section aria-label={label}><h3>本地讲解依据 · 第 {data.step} 手</h3>
+   {variation&&<p>原谱起点：第 {variationOrigin} 手；变化第 {step-variationOrigin} 手。试下来源由本地面板标记，服务仅核验分析局面与引用。</p>}
    <p>可复算棋盘事实；DeepSeek未启用，没有发给DeepSeek，不是中文策略讲解。</p>
-   {data.actual?<><p>实际落子：{color(data.actual.color)} {coordinate(data.actual.move)}</p>
-    <p>实际提子：{data.actual.captured.length}；{data.actual.captured.map(coordinate).join('、')||'无'}</p>
+   {data.actual?<><p>{moveLabel}落子：{color(data.actual.color)} {coordinate(data.actual.move)}</p>
+    <p>{moveLabel}提子：{data.actual.captured.length}；{data.actual.captured.map(coordinate).join('、')||'无'}</p>
     <p>{data.actual.liberties?`己链气：${data.actual.liberties.length}；${data.actual.liberties.map(coordinate).join('、')}`:'Pass 无新落子己链'}</p></>:<p>初盘，没有实际上一手；初始棋子 {data.initialStones}；轮{color(data.nextPlayer)}</p>}
    <p>{data.limitations.join(' ')}</p>
-   {data.before&&<Analysis title={`实战落子前的候选（${color(data.actual!.color)}）`} value={data.before}/>}
-   <Analysis title={`${data.actual?'实战落子后':'初盘下一手'}的候选（${color(data.nextPlayer)}）`} value={data.after}/>
+   {data.before&&<Analysis title={`${candidateLabel}落子前的候选（${color(data.actual!.color)}）`} value={data.before}/>}
+   <Analysis title={`${data.actual?`${candidateLabel}落子后`:'初盘下一手'}的候选（${color(data.nextPlayer)}）`} value={data.after}/>
    {data.decline&&<p>{color(data.actual!.color)}手：胜率下降 {data.decline.winratePoints.toFixed(2)} 百分点；目差下降 {data.decline.scoreLead.toFixed(2)} 目。保留正负，不是最优手损失或因果证明。</p>}
   </section>}
  </div>;

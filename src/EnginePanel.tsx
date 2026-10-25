@@ -1,7 +1,9 @@
 import {GoBoard} from "./GoBoard";
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import type {Replay} from './replay';
-import {gtp,type EngineResult} from './engine';
+import {engineInput,gtp} from './engine';
+import type {AnalyzedResult} from './evidence';
+import {ReviewEvidence} from './ReviewEvidence';
 import {analyze} from './analyze';
 import {startVariation,extendVariation,seekVariation,type Variation} from './variation';
 export function EngineEntry({game,step}:{game:Replay;step:number}) {
@@ -10,7 +12,12 @@ export function EngineEntry({game,step}:{game:Replay;step:number}) {
 }
 function EnginePanel({game,step,onClose}:{game:Replay;step:number;onClose:()=>void}) {
  const [current,setCurrent]=useState(()=>startVariation(game,step));
- const [result,setResult]=useState<EngineResult>();
+ const [result,setResult]=useState<AnalyzedResult>();
+ // Oldest successful write is evicted; replacing an identity refreshes its order.
+ // This cache belongs only to this mounted panel, never to the original game.
+ const analyses=useRef(new Map<string,AnalyzedResult>());
+ const identity=JSON.stringify(engineInput(current.replay,current.cursor));
+ const before=current.cursor>current.origin?analyses.current.get(JSON.stringify(engineInput(current.replay,current.cursor-1))):undefined;
  const [status,setStatus]=useState('等待本机服务…');
  const [error,setError]=useState('');
  const [retry,setRetry]=useState(0);
@@ -18,10 +25,14 @@ function EnginePanel({game,step,onClose}:{game:Replay;step:number;onClose:()=>vo
   let active=true;const controller=new AbortController();
   setResult(undefined);setStatus('等待本机服务…');
   void analyze(current.replay,current.cursor,controller.signal,status=>{if(active)setStatus(status);})
-   .then(result=>{if(active){setResult(result);setStatus('分析完成');}})
+   .then(result=>{if(active&&!controller.signal.aborted){
+    analyses.current.delete(identity);analyses.current.set(identity,result);
+    if(analyses.current.size>64)analyses.current.delete(analyses.current.keys().next().value!);
+    setResult(result);setStatus('分析完成');
+   }})
    .catch(e=>{if(active){setResult(undefined);setStatus('分析失败：'+e.message);}});
   return()=>{active=false;controller.abort();};
- },[current,retry]);
+ },[current,retry,identity]);
  function change(v:Variation){setResult(undefined);setStatus('等待本机服务…');setError('');setCurrent(v);}
  function play(point:string){try{change(extendVariation(current,point));}catch(e){setError((e as Error).message);}}
  const frame=current.replay.frames[current.cursor];
@@ -48,6 +59,10 @@ function EnginePanel({game,step,onClose}:{game:Replay;step:number;onClose:()=>vo
    <p>候选 {result.candidates.length} 项；显示前 {Math.min(10,result.candidates.length)} 项；未展示 {Math.max(0,result.candidates.length-10)} 项。</p>
    <ol>{result.candidates.slice(0,10).map((c,i)=><li key={i}>候选 {coordinate(c.move)}；visits {c.visits}；黑方胜率 {(c.winrate*100).toFixed(2)}%；黑方目差 {c.scoreLead.toFixed(2)}；PV：{c.pv?.length?c.pv.map(coordinate).join(' → '):'缺少 PV，不补齐'}</li>)}</ol>
   </div>}
+  {current.cursor===current.origin?<p>当前为试下起点，落子后可查看试下依据。</p>:<ReviewEvidence
+   key={JSON.stringify([identity,before?.evidenceId,result?.evidenceId])}
+   game={current.replay} step={current.cursor} before={before} after={result} variationOrigin={current.origin}
+  />}
   <GoBoard frame={frame} label="引擎变化棋盘" onPlay={play} />
  </section>;
 }
