@@ -96,3 +96,11 @@ Execution: in-progress（实现交回主代理，未独立审查/验收，不关
 已实际逐张打开11＋4图核对：1440/1280下走势标题、原谱手数和三角虚线可见，首屏趋势和输入保留；390窄屏趋势换行仍可见；920标签、草稿、对照、PV编号、自由试下、返回原谱、详情焦点和导入错误均为实际渲染。桌面默认内容图1264×835，窄窗试下底部仍需内部滚动。参考daylight浅灰青/淡砂/白面方向未变。此为实现核对，不是独立视觉verdict。
 
 保留 in-progress。独立 Spec/Standards/finish reviewer 复核、主代理整合复测与验收仍待执行；DESIGN.md 留待主代理另派，不标 done、不 push。
+
+### 提交与合基线后复核
+
+代码提交 `0ddf1176683879e5d83889033c5c3881ee20e3fe`（implement/17-single-board）。随后 `git merge --no-edit integration/go-coach` 返回 Already up to date；integration 仍为 `589c88c1182f1c02118a562dbdf2a2bef5cb9fd0`，已包含，无冲突。
+
+- `GO_COACH_TEST_PORT=5199 npm.cmd test -- tests/workspace.spec.ts tests/board-visual.spec.ts tests/full-game.spec.ts tests/evidence.spec.ts tests/session-watch.spec.ts tests/variation-evidence.spec.ts --workers=2`：78通过、0失败/跳过，`post-merge-affected.log`。
+- `npm.cmd run test:desktop -- desktop-tests/workspace.spec.ts`：再次build/打包，1通过、0失败/跳过，`post-merge-desktop.log`；此次附加截图在 `post-merge-desktop/`。canonical 15图仍为同一源码版本的完整网页/桌面回归截图，已逐张打开核对。
+- 本段只是提交后的证据追加，未再改变源码或测试；最终交付提交与日志对应见外部证据目录 `handoff.md`。
