@@ -74,6 +74,21 @@ test('双栏与窄窗标签保留试下及草稿，输入方向键不回放',asy
 });
 test.describe('对照有效期',()=>{
  test.use({engineScenario:'evidence-clock'});
+ for(const entry of ['查看推荐变化','dd 空 · A 推荐'])test(`已显示A后过期，${entry}重新核验且不补算`,async({page,engineServer})=>{
+  await upload(page,engineServer.url);
+  await page.getByLabel('导入后自动整局扫描').check();
+  await expect(page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');
+  await page.getByRole('button',{name:'下一手',exact:true}).click();
+  await page.getByRole('button',{name:'同起点对照',exact:true}).click();
+  await expect(page.getByRole('button',{name:'dd 空 · A 推荐',exact:true})).toBeVisible();
+  await engineServer.advanceClock(7200001);
+  await page.getByRole('button',{name:entry,exact:true}).click();
+  await expect(page.getByRole('region',{name:'主棋盘',exact:true})).toContainText('讲解依据已过期');
+  await expect(page.getByRole('button',{name:'查看推荐变化',exact:true})).toBeDisabled();
+  await expect(page.getByText('推荐变化 · 第 1 / 2 手',{exact:true})).toHaveCount(0);
+  await expect(page.locator('.board-annotation').filter({hasText:'A'})).toHaveCount(0);
+  expect((await engineServer.observed()).filter(q=>!q.action)).toHaveLength(5);
+ });
  test('过期分析不作为推荐或PV复活，不自动补分析',async({page,engineServer})=>{
   await upload(page,engineServer.url);
   await page.getByLabel('导入后自动整局扫描').check();
@@ -149,6 +164,7 @@ test('真实应用尺寸与模式截图，详情开合不重扫且无横向溢�
  await expect(page.getByRole('button',{name:'dd 空 · A 推荐',exact:true})).toBeVisible();
  await page.locator('#board-area').evaluate(el=>el.scrollTop=0);await shot('comparison');
  await page.getByRole('button',{name:'查看推荐变化',exact:true}).click();
+ await expect(page.getByText('推荐变化 · 第 1 / 2 手',{exact:true})).toBeVisible();
  await page.locator('#board-area').evaluate(el=>el.scrollTop=0);await shot('pv');
  await page.getByRole('button',{name:'自由试下',exact:true}).click();
  await expect(page.getByRole('region',{name:'本地引擎分析'})).toContainText('分析完成');
@@ -198,6 +214,40 @@ test('真实对照核验响应迟到不切回旧手或覆盖新的试下',async(
   await expect(page.getByRole('region',{name:'棋谱回放'})).toContainText('第 2 / 4 手');
  }finally{release();}
 });
+test.describe('展开核验迟到回归',()=>{
+ test.use({engineScenario:'evidence-clock'});
+for(const expired of [false,true])for(const destination of ['自由试下','返回原谱','下一手','换谱'])test(`展开PV重新核验迟到${expired?'失败':'成功'}，${destination}保留新状态`,async({page,engineServer})=>{
+ await upload(page,engineServer.url);await page.getByLabel('导入后自动整局扫描').check();
+ await expect(page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');
+ await page.getByRole('button',{name:'下一手',exact:true}).click();
+ await page.getByRole('button',{name:'同起点对照',exact:true}).click();
+ await expect(page.getByRole('button',{name:'dd 空 · A 推荐',exact:true})).toBeVisible();
+ let release!:()=>void,arrive!:()=>void,deliver!:()=>void;
+ const gate=new Promise<void>(r=>release=r),seen=new Promise<void>(r=>arrive=r),delivered=new Promise<void>(r=>deliver=r);
+ await page.route('**/api/review-evidence',async route=>{
+  const response=await route.fetch();expect(response.ok()).toBe(!expired);arrive();await gate;
+  await route.fulfill({response}).catch(()=>{});deliver();
+ });
+ try{
+  if(expired)await engineServer.advanceClock(7200001);
+  await page.getByRole('button',{name:'查看推荐变化',exact:true}).click();await seen;
+  if(destination==='换谱')await page.getByLabel('选择 SGF 文件').setInputFiles({name:'replacement.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5];B[qq])')});
+  else await page.getByRole('button',{name:destination,exact:true}).click();
+  release();await delivered;
+  // Allow delivery/render before checking that no late success changed the mode/source.
+  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+  if(destination==='自由试下'){
+   const panel=page.getByRole('region',{name:'本地引擎分析'});
+   await expect(panel).toContainText('分析完成');
+   await expect(panel).toContainText('原谱第 1 手落子前转为自由试下');
+   await expect(panel).not.toContainText('推荐变化');
+  }else await expect(page.getByRole('region',{name:'主棋盘'})).toContainText(destination==='下一手'?'原谱 · 第 2 手':destination==='换谱'?'原谱 · 第 0 手':'原谱 · 第 1 手');
+  await expect(page.getByText('推荐变化 · 第 1 / 2 手',{exact:true})).toHaveCount(0);
+  await expect(page.getByText(/讲解依据已过期/)).toHaveCount(0);
+  if(destination!=='换谱')expect((await engineServer.observed()).filter(q=>!q.action)).toHaveLength(destination==='自由试下'?6:5);
+ }finally{release();}
+});
+});
 test('低矮窗口和放大字体仍能内部滚动到回放与输入，标签保留状态',async({page,engineServer})=>{
  await upload(page,engineServer.url);
  for(const [width,height] of [[1280,600],[920,480]]){
@@ -212,6 +262,44 @@ test('低矮窗口和放大字体仍能内部滚动到回放与输入，标签�
   if(width<1100)await page.getByRole('tab',{name:'棋盘',exact:true}).click();
  }
  await expect(page.getByRole('region',{name:'棋谱回放'})).toContainText('第 2 / 4 手');
+});
+test('展开核验有界等待，超时清除A且迟到成功不复活或补算',async({page,engineServer})=>{
+ await upload(page,engineServer.url);await page.getByLabel('导入后自动整局扫描').check();
+ await expect(page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');
+ await page.getByRole('button',{name:'下一手',exact:true}).click();
+ await page.getByRole('button',{name:'同起点对照',exact:true}).click();
+ await expect(page.getByRole('button',{name:'dd 空 · A 推荐',exact:true})).toBeVisible();
+ let release!:()=>void,arrive!:()=>void,deliver!:()=>void;
+ const gate=new Promise<void>(r=>release=r),seen=new Promise<void>(r=>arrive=r),delivered=new Promise<void>(r=>deliver=r);
+ await page.route('**/api/review-evidence',async route=>{const response=await route.fetch();expect(response.ok()).toBe(true);arrive();await gate;await route.fulfill({response}).catch(()=>{});deliver();});
+ await page.clock.install();
+ try{
+  await page.getByRole('button',{name:'查看推荐变化',exact:true}).click();await seen;
+  await page.clock.fastForward(10001);
+  await expect(page.getByRole('region',{name:'主棋盘'})).toContainText('本地依据核验超时');
+  release();await delivered;await page.clock.runFor(100);
+  await expect(page.getByRole('button',{name:'查看推荐变化',exact:true})).toBeDisabled();
+  await expect(page.getByRole('region',{name:'主棋盘'})).toContainText('尚无可用分析');
+  await expect(page.getByText('推荐变化 · 第 1 / 2 手',{exact:true})).toHaveCount(0);
+  expect((await engineServer.observed()).filter(q=>!q.action)).toHaveLength(5);
+ }finally{release();}
+});
+test('紧凑走势可见黑方胜率和原谱定位，未知不造值且不冒充试下估值',async({page,engineServer})=>{
+ await upload(page,engineServer.url);
+ await expect(page.getByText('黑方胜率',{exact:true})).toBeVisible();
+ await expect(page.getByText('原谱第 0 手 · 未知',{exact:true})).toBeVisible();
+ const first=await page.getByRole('img',{name:'当前原谱第 0 手',exact:true}).boundingBox();
+ await page.getByRole('button',{name:'下一手',exact:true}).click();
+ await expect(page.getByText('原谱第 1 手 · 未知',{exact:true})).toBeVisible();
+ const second=await page.getByRole('img',{name:'当前原谱第 1 手',exact:true}).boundingBox();
+ expect(second!.x).toBeGreaterThan(first!.x);
+ await page.getByLabel('导入后自动整局扫描').check();
+ await expect(page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');
+ await expect(page.getByText('原谱第 1 手 · 60.00%',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'自由试下',exact:true}).click();
+ await page.getByRole('button',{name:'cc 空',exact:true}).click();
+ await expect(page.getByText('原谱第 1 手 · 60.00%',{exact:true})).toBeVisible();
+ await expect(page.getByRole('img',{name:'当前原谱第 1 手',exact:true})).toBeVisible();
 });
 test('正常复盘与本地试下共用唯一可见主盘',async({page,engineServer})=>{
  await upload(page,engineServer.url);

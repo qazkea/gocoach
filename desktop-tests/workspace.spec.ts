@@ -10,7 +10,15 @@ test('真实打包工作台单盘对照试下返回与窄窗草稿',async({deskt
  await page.getByRole('button',{name:'同起点对照',exact:true}).click();
  await expect(page.getByRole('button',{name:'dd 空 · A 推荐',exact:true})).toBeVisible();
  await expect(page.getByRole('img',{name:'ba 空',exact:true})).toBeVisible();
+ await expect(page.getByText('黑方胜率',{exact:true})).toBeVisible();
+ await expect(page.getByText('原谱第 1 手 · 60.00%',{exact:true})).toBeVisible();
+ await expect(page.getByRole('img',{name:'当前原谱第 1 手',exact:true})).toBeVisible();
  await page.screenshot({path:join(desktop.evidence,'comparison.png')});
+ await page.getByRole('button',{name:'查看推荐变化',exact:true}).click();
+ await expect(page.getByText('推荐变化 · 第 1 / 2 手',{exact:true})).toBeVisible();
+ await expect(page.getByRole('img',{name:'dd 黑',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'返回原谱',exact:true}).click();
+ await page.getByRole('button',{name:'同起点对照',exact:true}).click();
  await page.getByRole('button',{name:'自由试下',exact:true}).click();
  const trial=page.getByRole('region',{name:'本地引擎分析',exact:true});
  await expect(trial).toContainText('分析完成');

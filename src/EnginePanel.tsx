@@ -12,20 +12,24 @@ export function WorkspaceBoard({game,step,before,prior}:{game:Replay;step:number
  const [pv,setPV]=useState<Variation>();
  const [trial,setTrial]=useState<Variation>();
  const [error,setError]=useState('');
- const verification=useReviewEvidence({game,step:Math.max(0,step-1),after:before,before:prior,enabled:compare});
+ const verification=useReviewEvidence({game,step:Math.max(0,step-1),after:before,before:prior,enabled:compare&&!trial});
  const candidate=compare&&verification.data?verification.data.after.candidates[0]:undefined;
  const actual=game.frames[step].move.slice(2);
  const displayed=pv??startVariation(game,compare?step-1:step);
  const frame=displayed.replay.frames[displayed.cursor];
  function follow(){
   if(!candidate?.pv?.length)return;
-  try{
-   let variation=startVariation(game,step-1);
-   for(const point of candidate.pv)variation=extendVariation(variation,point==='pass'?'':point);
-   setPV(seekVariation(variation,variation.origin+1));setError('');
-  }catch(e){setError('推荐变化不可用：'+(e as Error).message);}
+  void verification.load(value=>{
+   const fresh=value.after.candidates[0];
+   if(!fresh?.pv?.length)return;
+   try{
+    let variation=startVariation(game,step-1);
+    for(const point of fresh.pv)variation=extendVariation(variation,point==='pass'?'':point);
+    setPV(seekVariation(variation,variation.origin+1));setError('');
+   }catch(e){setError('推荐变化不可用：'+(e as Error).message);}
+  });
  }
- function original(){setPV(undefined);setTrial(undefined);setCompare(false);setError('');}
+ function original(){verification.cancel();setPV(undefined);setTrial(undefined);setCompare(false);setError('');}
  if(trial)return <EnginePanel game={trial.replay} step={trial.cursor} onClose={original} derivedOrigin={!!pv} source={pv?`原谱第 ${step} 手的落子前推荐变化，第 ${pv.cursor-pv.origin} 手后转为自由试下`:compare?`原谱第 ${step} 手落子前转为自由试下`:`原谱第 ${step} 手后转为自由试下`}/>;
  const annotations:Record<string,string>={};
  if(pv){
@@ -52,8 +56,8 @@ export function WorkspaceBoard({game,step,before,prior}:{game:Replay;step:number
   {error&&<p role="alert">{error}</p>}
   <div className="board-wrap"><GoBoard frame={frame} label="19 路棋盘" annotations={annotations} onAnnotation={compare&&!pv&&candidate?.pv?.length?follow:undefined}/></div>
   <div className="board-actions">
-   {pv?<><button disabled={pv.cursor===pv.origin} onClick={()=>setPV(seekVariation(pv,pv.cursor-1))}>变化上一手</button><button disabled={pv.cursor===pv.replay.frames.length-1} onClick={()=>setPV(seekVariation(pv,pv.cursor+1))}>变化下一手</button></>:<button disabled={!step} onClick={()=>setCompare(v=>!v)}>同起点对照</button>}
-   <button onClick={()=>setTrial(startVariation(displayed.replay,displayed.cursor))}>自由试下</button>
+   {pv?<><button disabled={pv.cursor===pv.origin} onClick={()=>setPV(seekVariation(pv,pv.cursor-1))}>变化上一手</button><button disabled={pv.cursor===pv.replay.frames.length-1} onClick={()=>setPV(seekVariation(pv,pv.cursor+1))}>变化下一手</button></>:<button disabled={!step} onClick={()=>{verification.cancel();setCompare(v=>!v);}}>同起点对照</button>}
+   <button onClick={()=>{verification.cancel();setTrial(startVariation(displayed.replay,displayed.cursor));}}>自由试下</button>
   </div>
  </section>;
 }

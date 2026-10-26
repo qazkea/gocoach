@@ -61,8 +61,13 @@ export function FullGameReview({game,step,onStep,autoScan,children}:{game:Replay
   {running?<button onClick={pause}>暂停扫描</button>:<button disabled={successCount===game.frames.length} onClick={()=>setRunning(true)}>{failure?'重试失败局面并继续':'继续扫描'}</button>}
   {sessionNotice&&<p>{sessionNotice}</p>}
   {failure&&<p>失败局面：第 {failure.index} 手后；{failure.message}。等待用户重试，不自动重启。</p>}
+  <div className="trend-label"><strong>黑方胜率</strong><small>原谱第 {step} 手 · {current?`${(current.root.winrate*100).toFixed(2)}%`:'未知'}</small></div>
   <svg viewBox="0 0 600 120" role="img" aria-label="黑方胜率走势" style={{width:'100%',maxWidth:600}}>
    {results.map((r,i)=>{if(!r)return null;const x=10+i*580/Math.max(1,game.frames.length-1),y=110-r.root.winrate*100;return <g key={i}>{i>0&&results[i-1]&&<line x1={10+(i-1)*580/Math.max(1,game.frames.length-1)} y1={110-results[i-1]!.root.winrate*100} x2={x} y2={y} stroke="currentColor"/>}<circle cx={x} cy={y} r={3}/></g>;})}
+   <g role="img" aria-label={`当前原谱第 ${step} 手`} transform={`translate(${10+step*580/Math.max(1,game.frames.length-1)},0)`}>
+    <path d="M0 8V114" stroke="currentColor" strokeWidth="2" strokeDasharray="5 4"/>
+    <path d="M-7 0H7L0 9Z" fill="currentColor"/>
+   </g>
   </svg>
   <details className="analysis-details"><summary>分析详情与逐手定位</summary>
   <p>固定黑方视角（BLACK）：胜率0–100%，正目差表示黑领先。未知区段不连接。</p>

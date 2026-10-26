@@ -21,7 +21,8 @@ export function useReviewEvidence({game,step,after,before,enabled=false}:{game:R
  const epoch=useRef(0);
  useEffect(()=>()=>{epoch.current++;request.current?.abort();},[]);
  const ready=!!after&&(step===0||!!before&&before.engineSession===after.engineSession&&before.profile===after.profile&&before.komi===after.komi&&before.bonus===after.bonus&&before.engine===after.engine&&before.model===after.model);
- async function load(){
+ // Deliver one verified DTO without waiting for the long-lived session watch.
+ async function load(onVerified?:(value:EvidenceDTO)=>void){
   request.current?.abort();const controller=new AbortController();request.current=controller;
   const attempt=++epoch.current;
   const current=()=>attempt===epoch.current&&!controller.signal.aborted;
@@ -35,7 +36,7 @@ export function useReviewEvidence({game,step,after,before,enabled=false}:{game:R
   controller.signal.addEventListener('abort',()=>window.removeEventListener('offline',offline),{once:true});
   setData(undefined);setStatus('正在读取本地依据…');
   let confirmed=false;
-  const deadline=setTimeout(()=>fail('引擎会话观察未就绪，请重试'),10000);
+  const deadline=setTimeout(()=>fail(confirmed?'本地依据核验超时，请重试':'引擎会话观察未就绪，请重试'),10000);
   controller.signal.addEventListener('abort',()=>clearTimeout(deadline),{once:true});
   try{
    const auth=await fetch('/api/token',{signal:controller.signal}).then(r=>r.json());
@@ -45,7 +46,7 @@ export function useReviewEvidence({game,step,after,before,enabled=false}:{game:R
      const response=await fetch('/api/review-evidence',{method:'POST',headers,body:JSON.stringify({position:engineInput(game,step),afterId:after!.evidenceId,...(step?{beforeId:before!.evidenceId}:{})}),signal:controller.signal});
      const value=await response.json();
      if(!response.ok)throw Error(value.error??'读取依据失败');
-     if(current()&&confirmed){setData(value);setStatus('');}
+     if(current()&&confirmed){clearTimeout(deadline);setData(value);setStatus('');onVerified?.(value);}
     }catch(e){fail((e as Error).message);}
    };
    const response=await fetch('/api/engine-session-watch',{method:'POST',headers,body:'{}',signal:controller.signal});
@@ -66,7 +67,7 @@ export function useReviewEvidence({game,step,after,before,enabled=false}:{game:R
       try{value=JSON.parse(line);}catch{throw Error('引擎会话观察协议无效，请重试');}
       if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==1||!('engineSession' in value)||(value.engineSession!==null&&typeof value.engineSession!=='string'))throw Error('引擎会话观察协议无效，请重试');
       if(value.engineSession!==after!.engineSession){fail('讲解依据已过期，请重新导入棋谱分析');break;}
-      if(!confirmed){confirmed=true;clearTimeout(deadline);void query();}
+      if(!confirmed){confirmed=true;void query();}
      }
     }
    }finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
@@ -79,7 +80,8 @@ export function useReviewEvidence({game,step,after,before,enabled=false}:{game:R
   if(ready)void load();
   return()=>{epoch.current++;request.current?.abort();};
  },[enabled,game,step,after?.evidenceId,before?.evidenceId]);
- return {data,status,ready,load};
+ function cancel(){epoch.current++;request.current?.abort();setData(undefined);setStatus('');}
+ return {data,status,ready,load,cancel};
 }
 export function ReviewEvidence({game,step,after,before,variationOrigin,variationSource,derivedOrigin}:{game:Replay;step:number;after?:AnalyzedResult;before?:AnalyzedResult;variationOrigin?:number;variationSource?:string;derivedOrigin?:boolean}) {
  const variation=variationOrigin!==undefined;
