@@ -4,6 +4,7 @@ const a = `(${header};B[ba];W[aa];B[ab];W[ss])`;
 const b = `(${header};B[ba];W[aa];B[sr];W[ss];B[ab];W[cc];B[rs];W[tt])`;
 async function upload(page: Page, sgf = a) {
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'example.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(sgf)});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
 }
 const lesson = (page: Page) => page.getByRole('region', {name:'局面教学'});
 async function enter(page: Page, sgf = a) {
@@ -118,6 +119,7 @@ test('缺失或冲突的分析证据不呈现答案', async ({page}) => {
 test('B两种提子推荐与实战可切换，不把预设排序当更优证明', async ({page}) => {
  await page.goto('/');
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-two-corners.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await expect(lesson(page)).toContainText('第 4 手后');
  for (const name of ['aa 白','ss 白','ba 黑','sr 黑']) await expect(lesson(page).getByRole('button',{name,exact:true})).toBeVisible();

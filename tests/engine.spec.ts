@@ -1,3 +1,4 @@
+import {reveal} from './workspace-ui';
 import {test, expect} from './engine-fixture';
 import type {Page} from '@playwright/test';
 test('双方分支撤回重走替换未来及pass保留精确前缀，原谱未变',async({page,engineServer})=>{
@@ -13,7 +14,7 @@ test('双方分支撤回重走替换未来及pass保留精确前缀，原谱未�
  await panel(page).getByRole('button',{name:'引擎变化 Pass'}).click();await expect(panel(page)).toContainText('分析完成');
  const queries=(await engineServer.observed()).filter(q=>!q.action);
  expect(queries.at(-1).moves).toEqual([['B','B19'],['W','A19'],['B','D16'],['W','T1'],['B','pass']]);
- await panel(page).getByRole('button',{name:'关闭本地引擎面板'}).click();
+ await panel(page).getByRole('button',{name:'返回原谱'}).click();
  await page.getByRole('button',{name:'末尾',exact:true}).click();
  await expect(page.getByRole('region',{name:'棋谱回放'})).toContainText('第 4 / 4 手：W ss');
  await expect(page.getByRole('img',{name:'dd 空',exact:true})).toBeVisible();
@@ -225,12 +226,12 @@ test.describe('waiting',()=>{
   await expect(panel(page)).toContainText('分析中（查询');
   await page.getByRole('button',{name:'下一手',exact:true}).click();
   await expect(panel(page)).toHaveCount(0);
-  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();await expect(panel(page)).toContainText('分析中（查询');
+  await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');await expect(panel(page)).toContainText('分析中（查询');
   await page.getByLabel('导入后自动整局扫描').uncheck();
   await page.getByLabel('选择 SGF 文件').setInputFiles({name:'new.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Japanese]KM[6.5];B[pp])')});
   await expect(panel(page)).toHaveCount(0);
-  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();await expect(panel(page)).toContainText('分析中（查询');
-  await panel(page).getByRole('button',{name:'关闭本地引擎面板'}).click();await expect(panel(page)).toHaveCount(0);
+  await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');await expect(panel(page)).toContainText('分析中（查询');
+  await panel(page).getByRole('button',{name:'返回原谱'}).click();await expect(panel(page)).toHaveCount(0);
   await page.waitForTimeout(1000);await expect(panel(page)).toHaveCount(0);
   expect((await engineServer.observed()).filter(q=>q.action==='terminate')).toHaveLength(3);
  });
@@ -241,7 +242,7 @@ async function open(page:Page,url:string,sgf='(;FF[4]RU[Chinese]KM[7.5];B[ba];W[
  await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(sgf)});
  if(end)await page.getByRole('button',{name:'末尾',exact:true}).click();
- await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+ await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');
 }
 test.describe('duplicate',()=>{
  test.use({engineScenario:'duplicate'});
@@ -255,7 +256,7 @@ test('非示例谱显式打开本地引擎后展示黑方估值与分析条件',
  await page.goto(engineServer.url);
  await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5]PB[private-name]C[private-comment];B[dd];W[pp])')});
- await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+ await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');
  const panel=page.getByRole('region',{name:'本地引擎分析'});
  await expect(panel).toContainText('黑方视角');
  await expect(panel).toContainText('实际 visits：101');
@@ -268,7 +269,7 @@ test('必要历史和官方显式计算profile经进程出口传递且无身份�
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'private.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Japanese]KM[6.5]PB[private-name]C[private-comment];B[ba];W[aa];B[ab];W[ss])')});
  await page.getByRole('button',{name:'下一手',exact:true}).click();
  await page.getByRole('button',{name:'下一手',exact:true}).click();
- await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+ await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');
  await expect(page.getByRole('region',{name:'本地引擎分析'})).toContainText('分析完成');
  const queries=await engineServer.observed();
  expect(queries).toHaveLength(1);

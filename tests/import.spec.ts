@@ -32,7 +32,9 @@ test("初始setup矩形清空与让子不自动摆放", async ({page}) => {
  await expect(page.getByRole("img", {name:"aa 空",exact:true})).toBeVisible();
  for (const point of ["ab", "ba", "bb"]) await expect(page.getByRole("img", {name:point+" 黑",exact:true})).toBeVisible();
  await expect(page.getByRole("img", {name:"cc 白",exact:true})).toBeVisible();
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region", {name:"棋谱信息"})).toContainText("让子记录：2");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await page.getByRole("button", {name:"末尾",exact:true}).click();
  await expect(page.getByText("第 2 / 2 手：B ee",{exact:true})).toBeVisible();
  await upload(page, `(${header}HA[2];W[dd])`);
@@ -71,12 +73,18 @@ test("先解码GBK尾字节再处理SGF转义且Latin1不变1252", async ({page}
  await page.goto("/");
  const gbk = Buffer.concat([Buffer.from(`(${header.replace("UTF-8", "GBK")}PB[`), Buffer.from([0x81, 0x5c]), Buffer.from("])")]);
  await upload(page, gbk);
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region", {name:"棋谱信息"})).toContainText("乗");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  const latin = Buffer.concat([Buffer.from(`(${header.replace("CA[UTF-8]", "")}PB[`), Buffer.from([0x80, 0xe9]), Buffer.from("];B[dd])")]);
  await upload(page, latin);
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region", {name:"棋谱信息"})).toContainText("\u0080é");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await upload(page, `(${header}PB[甲\\]乙\\\\丙\\\n丁];B[dd])`);
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region", {name:"棋谱信息"})).toContainText("甲]乙\\丙丁");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  for (const bytes of [Buffer.from(`(${header.replace("UTF-8", "UTF-16")};B[dd])`), Buffer.concat([Buffer.from(`(${header}PB[`), Buffer.from([0xff]), Buffer.from("];B[dd])")]), Buffer.concat([Buffer.from(`(${header.replace("UTF-8", "GBK")}PB[`), Buffer.from([0x81, 0x30]), Buffer.from("];B[dd])")])]) {
   await upload(page, bytes);
   await expect(page.getByRole("alert")).toContainText("编码");
@@ -91,7 +99,9 @@ test("严格属性位置与支持边界且信息节点可在落子前", async ({
  }
  await upload(page, "(;FF[4]GM[1]SZ[19];RU[Chinese]KM[7.5]PB[甲];C[说明];B[dd])");
  await expect(page.getByRole("status")).toContainText("导入成功");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("未记录（不推断胜负或结束）");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
 });
 test("输入体积和节点上限明确反馈并可重传", async ({page}) => {
  await page.goto("/");
@@ -104,8 +114,10 @@ test("输入体积和节点上限明确反馈并可重传", async ({page}) => {
 });
 test("界面说明有限支持且键盘可导航", async ({page}) => {
  await page.goto("/");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByText(/仅基础回放校验/)).toBeVisible();
  await expect(page.getByText(/1 MiB/)).toBeVisible();
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await upload(page, `(${header};B[dd];W[pp])`);
  const replay = page.getByRole("region",{name:"棋谱回放"});
  await replay.focus();
@@ -160,7 +172,9 @@ test("迟到文件读取成功或失败不污染新棋局且无文件外发", as
    await (window as unknown as {release: () => Promise<void>}).release();
    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   });
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
   await expect(page.getByRole("region", {name:"棋谱信息"})).toContainText("新私人昵称");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await page.getByRole("button", {name:"末尾",exact:true}).click();
   await expect(page.getByRole("img", {name:"dd 黑",exact:true})).toBeVisible();
@@ -218,7 +232,9 @@ test("FF4拒绝一格压缩矩形和错误转义类型", async ({page}) => {
 test("完整合成赛后样例四手提子与最终记录", async ({page}) => {
  await page.goto("/");
  await page.getByLabel("选择 SGF 文件").setInputFiles("tests/fixtures/manual-finished.sgf");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("W+R");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await page.getByRole("button",{name:"末尾",exact:true}).click();
  await expect(page.getByText("第 4 / 4 手：W ss",{exact:true})).toBeVisible();
  for (const name of ["aa 空", "ba 黑", "ab 黑", "ss 白"]) {
@@ -246,13 +262,23 @@ test("结果与元数据保留且编码正确",async({page})=>{
  await page.goto("/");
  const sgf=simple.replace("RU[Japanese]","PB[棋手甲]RU[Japanese]");
  await page.getByLabel("选择 SGF 文件").setInputFiles({name:"utf8.sgf",mimeType:"application/x-go-sgf",buffer:Buffer.from(sgf)});
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("棋手甲");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("Japanese");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("6.5");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("B+R");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  const latin=simple.replace("CA[UTF-8]","PB[André]");
  await page.getByLabel("选择 SGF 文件").setInputFiles({name:"latin.sgf",mimeType:"application/x-go-sgf",buffer:Buffer.from(latin,"latin1")});
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
  await expect(page.getByRole("region",{name:"棋谱信息"})).toContainText("André");
+ await page.getByText('说明与棋谱信息',{exact:true}).click();
 });
 test("拒绝无法可靠还原的结构和元数据",async({page})=>{
  await page.goto("/");

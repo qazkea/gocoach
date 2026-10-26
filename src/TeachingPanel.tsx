@@ -1,5 +1,5 @@
 import {GoBoard} from "./GoBoard";
-import {useEffect, useState} from "react";
+import {useEffect, useState, type ReactNode} from "react";
 import {VariationPanel} from "./VariationPanel";
 import {matchExample, analyze, attempt, evidenceText, goalText, hintText, targetPoints, libertyPoints, type Lesson, type Selection} from "./teaching";
 import {type Frame, type Replay} from "./replay";
@@ -12,7 +12,7 @@ const modeLabels: Record<TeachingMode, string> = {
  engine: "模拟引擎首选",
 };
 type AnalysisState = {status:"loading"} | {status:"ready"; selection:Selection} | {status:"error"; message:string};
-export function Course({game, step, onStep}: {game: Replay; step: number; onStep: (step:number) => void}) {
+export function Course({game, step, onStep, fallback}: {game: Replay; step: number; onStep: (step:number) => void; fallback?:ReactNode}) {
  const example = matchExample(game);
  const [state, setState] = useState<AnalysisState>({status:"loading"});
  const result = state.status === "ready" ? state.selection : undefined;
@@ -31,7 +31,7 @@ export function Course({game, step, onStep}: {game: Replay; step: number; onStep
   // Honor an entry made while loading, but never pull a user back from replay.
   if (opened && step === example?.step && result?.lessons[0]) onStep(result.lessons[0].step);
  }, [result]);
- if (!example) return <p>当前没有对应示例分析；仍可回放。</p>;
+ if (!example) return <><p>当前没有对应示例分析；仍可回放。</p>{fallback}</>;
  const current = result?.lessons[index];
  const visible = opened && step === (current?.step ?? example.step);
  return <section aria-label="教学精选">
@@ -40,6 +40,7 @@ export function Course({game, step, onStep}: {game: Replay; step: number; onStep
   {!visible && state.status === "error" && <button onClick={() => setRequest(n=>n+1)}>重试分析</button>}
   {(!result || current) && <button onClick={() => {if (opened && !visible && !result) setRequest(n => n + 1); setOpened(true); onStep(current?.step ?? example.step);}}>进入核验教学局面</button>}
   {result && result.lessons.length > 1 && <nav aria-label="精选导航"><span>第 {index + 1} / {result.lessons.length} 个精选</span><button disabled={index === 0} onClick={() => {setIndex(index-1); setOpened(true); onStep(result.lessons[index-1].step);}}>上一个精选</button><button disabled={index === result.lessons.length-1} onClick={() => {setIndex(index+1); setOpened(true); onStep(result.lessons[index+1].step);}}>下一个精选</button></nav>}
+  {!visible&&fallback}
   {visible && (current ? <Teaching key={request + ':' + index + ':' + step} game={game} analysis={current} /> : <section aria-label="局面教学"><p>{message}</p>{state.status === "error" && <button onClick={() => setRequest(n => n + 1)}>重试分析</button>}</section>)}
  </section>;
 }

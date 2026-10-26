@@ -7,12 +7,14 @@ type Props = {
  onPlay?: (point: string) => void;
  previewPlayer?: 'B' | 'W';
  mark?: (point: string) => Mark;
+ annotations?: Record<string,string>;
+ onAnnotation?: (point:string)=>void;
 };
 const axes = Array.from({length:19}, (_, i) => i);
 
 // SVG units and HTML cells share the same 21-unit square: centers 1.5…19.5.
 // Rules, analysis and history stay with callers; this module only presents a frame.
-export function GoBoard({frame, label, onPlay, previewPlayer = frame.nextPlayer, mark}: Props) {
+export function GoBoard({frame, label, onPlay, previewPlayer = frame.nextPlayer, mark, annotations, onAnnotation}: Props) {
  const latest = /^[BW] ([a-s]{2})$/.exec(frame.move)?.[1];
  return <>
   {onPlay && <p>半透明棋子仅为试下预览，不代表合法落子；点击或按 Enter / 空格试下。</p>}
@@ -34,7 +36,10 @@ export function GoBoard({frame, label, onPlay, previewPlayer = frame.nextPlayer,
    const point = String.fromCharCode(97+i%19)+String.fromCharCode(97+Math.floor(i/19));
    const last = !!stone && point === latest;
    const props = {className:'point '+(stone ?? ''), 'aria-label':point+' '+(stone === 'B' ? '黑' : stone === 'W' ? '白' : '空'), 'data-coordinate':point, 'data-mark':mark?.(point), 'data-last-move':last ? '' : undefined, title:point};
-   const contents = <>{!stone && onPlay && <span aria-hidden="true" className={'stone preview '+previewPlayer}/>}{stone && <span aria-hidden="true" className={'stone '+stone}/>}{last && <span aria-hidden="true" className="last-move"/>}</>;
+   const annotation=annotations?.[point];
+   const action=annotation?.includes('A')?onAnnotation:undefined;
+   const contents = <>{annotation&&<span className="board-annotation">{annotation}</span>}{!stone && onPlay && <span aria-hidden="true" className={'stone preview '+previewPlayer}/>}{stone && <span aria-hidden="true" className={'stone '+stone}/>}{last && <span aria-hidden="true" className="last-move"/>}</>;
+   if(action)return <button key={point} type="button" {...props} aria-label={props['aria-label']+' · '+annotation+' 推荐'} onClick={()=>action(point)}>{contents}</button>;
    return onPlay ? <button key={point} type="button" {...props} onClick={() => onPlay(point)}>{contents}</button> : <span key={point} role="img" {...props}>{contents}</span>;
   })}</div>
  </div></>;

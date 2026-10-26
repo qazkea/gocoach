@@ -6,6 +6,7 @@ test('白先危险棋子经真实证据精选，提示试下解除一气而不�
  await page.route('**/analysis/mixed-c.json', route => route.fulfill({json:{context,candidates:[rescue]}}));
  await page.goto('/');
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'c.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(c)});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 1 个');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  const lesson = page.getByRole('region',{name:'局面教学'});
@@ -25,6 +26,7 @@ test('乱序复杂最大损失不优先，去重精选三题并逐课重置', as
  const complex = {id:'complex',step:5,player:'B',kind:'force',loss:999,teaching:'rs',engine:'rs',evidence:[{move:'rs',targets:[{stones:['ss'],liberties:['rs','sr']}],captured:['ss'],third:'sr'}]};
  await page.route('**/analysis/mixed-c.json', route => route.fulfill({json:{context,candidates:[complex,connect,capture,{...rescue,id:'duplicate'},rescue]}}));
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles({name:'c.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(c)});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  const selection = page.getByRole('region',{name:'教学精选'});
  await expect(selection).toContainText('精选 3 个');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
@@ -48,6 +50,7 @@ test('乱序复杂最大损失不优先，去重精选三题并逐课重置', as
 });
 test('D真实文件三手内强制提子核验所有合法应手含pass，不冒充通用死活', async ({page}) => {
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-force.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 1 个');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'直接看答案'}).click();
@@ -75,6 +78,7 @@ test('空候选与缺证据和超范围分别解释，不凑数且保留回放',
  ] as const) {
   await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates}}));
   await page.getByLabel('选择 SGF 文件').setInputFiles({name:'c.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(c)});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
   await expect(page.getByRole('region',{name:'教学精选'})).toContainText(message);
   await expect(page.getByRole('button',{name:'进入核验教学局面'})).toHaveCount(0);
   await expect(page.getByRole('region',{name:'棋谱回放'})).toBeVisible();
@@ -83,6 +87,7 @@ test('空候选与缺证据和超范围分别解释，不凑数且保留回放',
 });
 test('C真实文件提供混合四类输入，精选按证明复杂度而非资源顺序', async ({page}) => {
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles({name:'c.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(c)});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 3 个');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await expect(page.getByRole('region',{name:'局面教学'})).toContainText('危险棋子');
@@ -95,12 +100,14 @@ test('等待中进入，候选定位非零步后自动进入当前精选且可�
  let release!:()=>void; const gate=new Promise<void>(r=>release=r);
  await page.route('**/analysis/mixed-c.json',async route=>{await gate; await route.fulfill({json:{context,candidates:[capture]}});});
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('分析中');
  await page.getByRole('button',{name:'进入核验教学局面'}).click(); release();
  await expect(page.getByRole('region',{name:'局面教学'})).toContainText('第 3 手后');
  await page.unroute('**/analysis/mixed-c.json');
  await page.route('**/analysis/mixed-c.json',route=>route.fulfill({status:503,body:'unavailable'}));
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('分析失败');
  await expect(page.getByRole('region',{name:'棋谱回放'})).toBeVisible();
  await page.unroute('**/analysis/mixed-c.json');
@@ -115,6 +122,7 @@ test('目标链和子数越界显式拒绝，不能靠复杂大目标凑题', as
  ]) {
   await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[{...connect,evidence:[{...connect.evidence[0],targets}]}]}}));
   await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
   await expect(page.getByRole('region',{name:'教学精选'})).toContainText('最多2链/6子');
   await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 0 个');
   await page.unroute('**/analysis/mixed-c.json');
@@ -134,6 +142,7 @@ test('四类伪证据或不能完成目标的推荐均不入选', async ({page})
  ]) {
   await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[candidate]}}));
   await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
   await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 0 个');
   await expect(page.getByRole('button',{name:'直接看答案'})).toHaveCount(0);
   await page.unroute('**/analysis/mixed-c.json');
@@ -141,6 +150,7 @@ test('四类伪证据或不能完成目标的推荐均不入选', async ({page})
  // A genuine single forced candidate is still reachable, not filtered by category.
  await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[force]}}));
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 1 个');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'直接看答案'}).click();
@@ -156,6 +166,7 @@ test('候选响应绑定完整源身份，不接受错setup规则贴目轮次或
  ]) {
   await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context:bad,candidates:[rescue],text:'伪造全局结论'}}));
   await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
   const selection=page.getByRole('region',{name:'教学精选'});
   await expect(selection).toContainText('证据不足或局面不符');
   await expect(selection).not.toContainText('精选 1 个'); await expect(selection).not.toContainText('伪造全局结论');
@@ -168,6 +179,7 @@ test('强制证明预算耗尽说明未完整核验，重复目标不凑数', as
  const force={id:'force',step:0,player:'B',kind:'force',teaching:'ba',engine:'ab',evidence:[{move:'ba',targets:[{stones:['aa'],liberties:['ba','ab']}],captured:['aa'],third:'ab'},{move:'ab',targets:[{stones:['aa'],liberties:['ba','ab']}],captured:['aa'],third:'ba'}]};
  await page.route('**/analysis/force-d.json',route=>route.fulfill({json:{context:dContext,candidates:Array.from({length:4},(_,i)=>({...force,id:'duplicate'+i}))}}));
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-force.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  const selection=page.getByRole('region',{name:'教学精选'});
  await expect(selection).toContainText('精选 1 个');
  await expect(selection).toContainText('4096次落子验证预算耗尽');
@@ -183,11 +195,14 @@ test('C/D公开源出口不含私密信息，改动真实setup的反例是未知
  const allowed=[origin+'/analysis/mixed-c.json',origin+'/analysis/force-d.json'];
  await page.route('**/*',route=>{const r=route.request(); if(r.url()===origin+'/api/engine-capability'&&r.method()==='GET'&&r.postData()===null)return route.continue(); outbound.push({url:r.url(),method:r.method(),body:r.postData()}); return allowed.includes(r.url()) ? route.continue() : route.abort();});
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'私人名字.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(c.replace('RE[B+R]','RE[B+R]PB[私人昵称]PW[私人对手]C[私人评论]'))});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 3 个');
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-force.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 1 个');
  // Removing ac allows W ab to escape after B ba. It is not the verified source.
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'counterexample.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]GM[1]SZ[19]CA[UTF-8]RU[Chinese]KM[7.5]AB[ca][bb]AW[aa]PL[B];B[ba];W[ss];B[ab];W[rr])')});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByText('当前没有对应示例分析；仍可回放。')).toBeVisible();
  await expect(page.getByRole('region',{name:'局面教学'})).toHaveCount(0);
  expect(outbound).toEqual(allowed.map(url=>({url,method:'GET',body:null})));
@@ -197,6 +212,7 @@ test('一条pass变化能提不代表强制：对方延伸原链可逃则拒绝'
  const falseForce={id:'pv-only',step:0,player:'W',kind:'force',teaching:'bb',engine:'bb',evidence:[{move:'bb',targets:[{stones:['ba'],liberties:['ca','bb']}],captured:['ba'],third:'ca'}]};
  await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[falseForce]}}));
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 0 个');
  await expect(page.getByRole('button',{name:'直接看答案'})).toHaveCount(0);
 });
@@ -205,8 +221,10 @@ test('C旧成功失败均不覆盖D队列或当前课，返回上一课清空试
   let release!:()=>void; const gate=new Promise<void>(r=>release=r);
   await page.route('**/analysis/mixed-c.json',async route=>{await gate; await route.fulfill(fail ? {status:503,body:'old failure'} : {json:{context,candidates:[rescue,capture,connect]}});});
   await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
   await expect(page.getByRole('region',{name:'教学精选'})).toContainText('分析中');
   await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-force.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
   await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 1 个');
   await page.getByRole('button',{name:'进入核验教学局面'}).click();
   await page.getByRole('button',{name:'直接看答案'}).click();
@@ -218,6 +236,7 @@ test('C旧成功失败均不覆盖D队列或当前课，返回上一课清空试
   await page.unroute('**/analysis/mixed-c.json');
  }
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'请求提示'}).click(); await page.getByRole('button',{name:'直接看答案'}).click();
  await page.getByRole('button',{name:'下一个精选'}).click(); await page.getByRole('button',{name:'上一个精选'}).click();
@@ -230,6 +249,7 @@ test('两类推荐合计目标不能超过两链，不把每条推荐各自合�
  const tooMany={...connect,engine:'ll',evidence:[...connect.evidence,{move:'ll',targets:[{stones:['lm'],liberties:['km','ll','ln']},{stones:['ml'],liberties:['ll','nl','mk']}],captured:[],afterLiberties:['kl','lk','km','ln','nl','mk']}]};
  await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[tooMany]}}));
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 0 个');
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('最多2链/6子');
 });
@@ -237,6 +257,7 @@ test('同ID同步不同目标的合法课往返时清空答案提示试下及变
  const other = {...connect,teaching:'ll',engine:'ll',evidence:[{move:'ll',targets:[{stones:['lm'],liberties:['km','ll','ln']},{stones:['ml'],liberties:['ll','nl','mk']}],captured:[],afterLiberties:['kl','lk','km','ln','nl','mk']}]};
  await page.route('**/analysis/mixed-c.json',route=>route.fulfill({json:{context,candidates:[connect,other]}}));
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 2 个');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  const lesson=page.getByRole('region',{name:'局面教学'});
@@ -270,6 +291,7 @@ test('同ID同步不同目标的合法课往返时清空答案提示试下及变
 });
 test('连接课偏离目标的合法试下分别说明两条棋链的实际气', async ({page}) => {
  await page.goto('/'); await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-mixed.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'下一个精选'}).click();
  await page.getByRole('button',{name:'下一个精选'}).click();
@@ -289,6 +311,7 @@ test('连接课偏离目标的合法试下分别说明两条棋链的实际气',
 test('上传A即分析并精选一个目标，数量时长只是目标', async ({page}) => {
  await page.goto('/');
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-finished.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('精选 1 个');
  await expect(page.getByRole('region',{name:'教学精选'})).toContainText('10–15 分钟');
  await page.getByRole('button',{name:'进入核验教学局面'}).click();

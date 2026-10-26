@@ -39,6 +39,7 @@ readline.createInterface({input:process.stdin}).on('line',line=>{
  const reply={id:q.id,turnNumber:q.moves.length,isDuringSearch:false,rootInfo,moveInfos:[candidate]};
  if(scenario==='ko'){candidate.move='H12';candidate.pv=['H12','pass'];}
  if(scenario==='missingPV')delete candidate.pv;
+ if(scenario==='emptyCandidates')reply.moveInfos=[];
  if(scenario==='invalidPV')candidate.pv=[move,move];
  if(scenario==='invalidMove')candidate.move='I19';
  if(scenario==='invalidNumber')candidate.winrate=1.2;

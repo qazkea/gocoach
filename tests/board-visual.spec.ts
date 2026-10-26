@@ -14,6 +14,7 @@ async function upload(page: Page, moves = ';B[aa];W[ss];B[jj];W[]') {
 }
 test('教学重试预览保持原执棋方，标记不遮棋子，变化预览随双方交替', async ({page}) => {
  await upload(page, ';B[ba];W[aa];B[ab];W[ss]');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  const lesson = page.getByRole('region',{name:'局面教学'});
  await expect(lesson).toContainText('半透明棋子仅为试下预览，不代表合法落子');
@@ -62,11 +63,13 @@ test('教学重试预览保持原执棋方，标记不遮棋子，变化预览�
  await expect(variation.locator('[data-last-move]')).toHaveCount(0);
  await variation.getByRole('button',{name:'撤回一手'}).click();
  await expect(variation.getByRole('button',{name:'ss 白',exact:true}).locator('.last-move')).toBeVisible();
- await expect(page.getByRole('region',{name:'棋谱回放'}).getByRole('img',{name:'dd 空',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'返回正常复盘',exact:true}).click();
+ await expect(page.getByRole('img',{name:'dd 空',exact:true})).toBeVisible();
 });
 test('390窄屏四角与中心交叉点几何吻合且点击无偏移', async ({page}) => {
  await page.setViewportSize({width:390,height:844});
  await upload(page, ';B[ba];W[aa];B[ab];W[ss]');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'探索连续变化'}).click();
  const region = page.getByRole('region',{name:'变化探索'});
@@ -102,7 +105,8 @@ test('回放绘制连续网格圆形棋子，最近一手跟随帧而非pass', a
  await upload(page);
  const board = page.getByLabel('19 路棋盘', {exact:true});
  const dimensions=(await board.boundingBox())!;
- expect(dimensions.width).toBeGreaterThanOrEqual(600);
+ // Workspace fits the board alongside the reading area rather than a 630px long page.
+ expect(dimensions.width).toBeGreaterThanOrEqual(350);
  expect(dimensions.width).toBeLessThanOrEqual(640);
  await board.getByRole('img',{name:'aa 空',exact:true}).click();
  await expect(board.getByRole('img',{name:'aa 空',exact:true})).toBeVisible();

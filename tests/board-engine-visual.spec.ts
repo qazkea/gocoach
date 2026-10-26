@@ -5,7 +5,7 @@ test('可控引擎棋盘黑白焦点预览不分析不改状态，落子与pass�
  await page.goto(engineServer.url);
  await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'visual.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5];B[dd];W[pp])')});
- await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+ await page.getByRole('button',{name:'自由试下'}).click();
  const panel = page.getByRole('region',{name:'本地引擎分析'});
  await expect(panel).toContainText('分析完成');
  let requests=0;
@@ -39,5 +39,6 @@ test('可控引擎棋盘黑白焦点预览不分析不改状态，落子与pass�
  await expect(panel.getByRole('button',{name:'ss 白',exact:true})).toHaveAttribute('data-last-move','');
  await panel.getByRole('button',{name:'引擎变化重走',exact:true}).click();
  await expect(panel.locator('[data-last-move]')).toHaveCount(0);
- await expect(page.getByRole('region',{name:'棋谱回放'}).getByRole('img',{name:'aa 空',exact:true})).toBeVisible();
+ await panel.getByRole('button',{name:'返回原谱',exact:true}).click();
+ await expect(page.getByRole('img',{name:'aa 空',exact:true})).toBeVisible();
 });

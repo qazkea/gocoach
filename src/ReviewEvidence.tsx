@@ -14,11 +14,7 @@ function Analysis({title,value}:{title:string;value:EvidenceAnalysis}) {
 }
 // Parent keys this request lifetime by selection and evidence identities. Unmount
 // aborts I/O and guards late resolutions without retaining stale detail on render.
-export function ReviewEvidence({game,step,after,before,variationOrigin}:{game:Replay;step:number;after?:AnalyzedResult;before?:AnalyzedResult;variationOrigin?:number}) {
- const variation=variationOrigin!==undefined;
- const label=variation?'试下讲解依据':'本手讲解依据';
- const moveLabel=variation?'试下':'实际';
- const candidateLabel=variation?'试下':'实战';
+export function useReviewEvidence({game,step,after,before,enabled=false}:{game:Replay;step:number;after?:AnalyzedResult;before?:AnalyzedResult;enabled?:boolean}) {
  const [data,setData]=useState<EvidenceDTO>();
  const [status,setStatus]=useState('');
  const request=useRef<AbortController|undefined>(undefined);
@@ -77,12 +73,27 @@ export function ReviewEvidence({game,step,after,before,variationOrigin}:{game:Re
   }catch(e){fail((e as Error).message);}
   finally{clearTimeout(deadline);}
  }
+ useEffect(()=>{
+  if(!enabled)return;
+  setData(undefined);setStatus('');
+  if(ready)void load();
+  return()=>{epoch.current++;request.current?.abort();};
+ },[enabled,game,step,after?.evidenceId,before?.evidenceId]);
+ return {data,status,ready,load};
+}
+export function ReviewEvidence({game,step,after,before,variationOrigin,variationSource,derivedOrigin}:{game:Replay;step:number;after?:AnalyzedResult;before?:AnalyzedResult;variationOrigin?:number;variationSource?:string;derivedOrigin?:boolean}) {
+ const variation=variationOrigin!==undefined;
+ const label=variation?'试下讲解依据':'本手讲解依据';
+ const moveLabel=variation?'试下':'实际';
+ const candidateLabel=variation?'试下':'实战';
+ const {data,status,ready,load}=useReviewEvidence({game,step,after,before});
  return <div>
   <button disabled={!ready||status==='正在读取本地依据…'} onClick={()=>void load()}>查看{label}</button>
   {!ready&&<p>当前所需前后分析尚未齐全，不自动补跑引擎。</p>}
   {status&&<p role="status">{status}</p>}
   {data&&<section aria-label={label}><h3>本地讲解依据 · 第 {data.step} 手</h3>
-   {variation&&<p>原谱起点：第 {variationOrigin} 手；变化第 {step-variationOrigin} 手。试下来源由本地面板标记，服务仅核验分析局面与引用。</p>}
+   {variationSource&&<p>进入路径：{variationSource}。下列起点手数为当前规范历史长度，推荐分支不等于原谱同手。</p>}
+   {variation&&<p>{derivedOrigin?'规范历史起点':'原谱起点'}：第 {variationOrigin} 手；变化第 {step-variationOrigin} 手。试下来源由本地面板标记，服务仅核验分析局面与引用。</p>}
    <p>可复算棋盘事实；DeepSeek未启用，没有发给DeepSeek，不是中文策略讲解。</p>
    {data.actual?<><p>{moveLabel}落子：{color(data.actual.color)} {coordinate(data.actual.move)}</p>
     <p>{moveLabel}提子：{data.actual.captured.length}；{data.actual.captured.map(coordinate).join('、')||'无'}</p>

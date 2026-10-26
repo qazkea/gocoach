@@ -3,6 +3,7 @@ const variation = (page: Page) => page.getByRole('region', {name:'变化探索'}
 async function enter(page: Page, file = 'manual-finished.sgf') {
  await page.goto('/');
  await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/' + file);
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'探索连续变化'}).click();
 }
@@ -26,6 +27,7 @@ test('变化出口只请求同源公开示例资源，不发送私密棋谱字�
   return allowed.includes(r.url()) ? route.continue() : route.abort();
  });
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'私人文件.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]GM[1]SZ[19]CA[UTF-8]RU[Chinese]KM[7.5]RE[W+R]PB[私人名字]PW[私人对手]C[私人评论];B[ba];W[aa];B[ab];W[ss])')});
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
  await page.getByRole('button',{name:'进入核验教学局面'}).click();
  await page.getByRole('button',{name:'探索连续变化'}).click();
  await expect(variation(page)).toContainText('当前唯一气');
@@ -52,6 +54,7 @@ test('乱序旧成功和失败不覆盖换应对、撤回重走、模式及文�
    await expect(variation(page)).toContainText('变化分析中');
    if (destination === 'file') {
     await page.getByLabel('选择 SGF 文件').setInputFiles('tests/fixtures/manual-two-corners.sgf');
+ await page.getByRole('button',{name:'预设教学入口',exact:true}).click();
     await page.getByRole('button',{name:'进入核验教学局面'}).click();
     await page.getByRole('button',{name:'探索连续变化'}).click();
    } else if (destination === 'mode') {

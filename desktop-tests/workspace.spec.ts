@@ -1,0 +1,33 @@
+import {test,expect,upload} from './fixture';
+import {join} from 'node:path';
+
+test('真实打包工作台单盘对照试下返回与窄窗草稿',async({desktop})=>{
+ const run=await desktop.launch();await desktop.select(run,desktop.operator);
+ const {page}=run;await upload(page);
+ await expect(page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');
+ await expect(page.locator('.board:visible')).toHaveCount(1);
+ await page.getByRole('button',{name:'下一手',exact:true}).click();
+ await page.getByRole('button',{name:'同起点对照',exact:true}).click();
+ await expect(page.getByRole('button',{name:'dd 空 · A 推荐',exact:true})).toBeVisible();
+ await expect(page.getByRole('img',{name:'ba 空',exact:true})).toBeVisible();
+ await page.screenshot({path:join(desktop.evidence,'comparison.png')});
+ await page.getByRole('button',{name:'自由试下',exact:true}).click();
+ const trial=page.getByRole('region',{name:'本地引擎分析',exact:true});
+ await expect(trial).toContainText('分析完成');
+ await trial.getByRole('button',{name:'cc 空',exact:true}).click();
+ await expect(trial).toContainText('分析完成');
+ await expect(page.locator('.board:visible')).toHaveCount(1);
+ await page.getByRole('textbox',{name:'复盘草稿'}).fill('这步从同一起点试下');
+ await run.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(920,720));
+ await page.getByRole('tab',{name:'教练',exact:true}).click();
+ await expect(page.getByRole('textbox',{name:'复盘草稿'})).toHaveValue('这步从同一起点试下');
+ await page.screenshot({path:join(desktop.evidence,'narrow-coach.png')});
+ await page.getByRole('tab',{name:'棋盘',exact:true}).click();
+ await expect(trial.getByRole('button',{name:'cc 黑',exact:true})).toBeVisible();
+ await page.screenshot({path:join(desktop.evidence,'narrow-trial.png')});
+ await trial.getByRole('button',{name:'返回原谱',exact:true}).click();
+ await expect(page.getByRole('img',{name:'ba 黑',exact:true})).toBeVisible();
+ await expect(page.getByRole('img',{name:'cc 空',exact:true})).toBeVisible();
+ await page.screenshot({path:join(desktop.evidence,'returned.png')});
+ await run.close();
+});

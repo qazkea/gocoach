@@ -1,9 +1,11 @@
+import {reveal} from './workspace-ui';
 import {test,expect} from './engine-fixture';
 import type {Page} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 const review=(page:Page)=>page.getByRole('region',{name:'整局复盘'});
 async function upload(page:Page,sgf='(;FF[4]RU[Chinese]KM[7.5]PB[private-name]C[private-comment];B[ba];W[aa];B[ab];W[])') {
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'private.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(sgf)});
+ await reveal(page,'分析详情与逐手定位');
 }
 test.describe('独立手算估值',()=>{
  test.use({engineScenario:'review-values'});
@@ -126,7 +128,7 @@ test.describe('手动分支竞争',()=>{
  test('四个未收尾手动请求占满时自动队列明确busy暂停不反复提交',async({page,engineServer})=>{
   await page.goto(engineServer.url);await page.getByLabel('导入后自动整局扫描').uncheck();await upload(page);
   expect(await engineServer.observed()).toEqual([]);
-  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+  await page.getByRole('button',{name:'自由试下'}).click();
   const manual=page.getByRole('region',{name:'本地引擎分析'});
   await expect(manual).toContainText('分析中（查询');
   for(const point of ['aa','ba','ab']){
@@ -147,7 +149,7 @@ test.describe('扫描与分支并存',()=>{
  test('手动变化不混入原谱扫描，双方独立完成并可返回原谱',async({page,engineServer})=>{
   await page.goto(engineServer.url);await upload(page,'(;FF[4]RU[Chinese]KM[7.5];B[ba])');
   await expect(review(page)).toContainText('分析中（查询');
-  await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+  await page.getByRole('button',{name:'自由试下'}).click();
   const manual=page.getByRole('region',{name:'本地引擎分析'});
   await expect(manual).toContainText('分析完成');
   await manual.getByRole('button',{name:'ss 空',exact:true}).click();
@@ -192,7 +194,7 @@ test.describe('容量边界（不扫描全部2000局面）',()=>{
   await review(page).getByRole('button',{name:'定位第 1999 手',exact:true}).click();
   await expect(page.getByRole('region',{name:'棋谱回放'})).toContainText('第 1999 / 1999 手：B pass');
   expect((await engineServer.observed()).filter(q=>!q.action)).toHaveLength(1);
-  await upload(page,`(;FF[4]RU[Chinese]KM[7.5]${moves};W[])`);
+  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'oversize.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from(`(;FF[4]RU[Chinese]KM[7.5]${moves};W[])`)});
   await expect(page.getByRole('alert')).toContainText('2000');
   await expect(review(page)).toHaveCount(0);
  });

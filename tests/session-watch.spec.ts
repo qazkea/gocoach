@@ -1,3 +1,4 @@
+import {reveal} from './workspace-ui';
 import {test,expect} from './engine-fixture';
 import {evidenceClient,initial} from './evidence-http';
 import {fork} from 'node:child_process';
@@ -9,6 +10,7 @@ const details=(page:Page)=>page.getByRole('region',{name:'本手讲解依据',ex
 async function prepare(page:Page,url:string){
  await page.goto(url);
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5];B[ba];W[aa];B[ab];W[])')});
+ await reveal(page,'分析详情与逐手定位');
  await expect(review(page)).toContainText('完成：5 / 5');
 }
 async function watch(url:string){
@@ -79,7 +81,7 @@ test('别的手动面板重启引擎后，同手旧refs不恢复且再看不分�
  await review(page).getByRole('button',{name:'查看本手讲解依据'}).click();await expect(details(page)).toBeVisible();
  process.kill((await engineServer.pids()).at(-1)!);
  await expect(review(page)).toContainText('讲解依据已过期');
- await page.getByRole('button',{name:'打开本地真实引擎分析',exact:true}).click();
+ await page.getByRole('button',{name:'自由试下',exact:true}).click();
  await expect(page.getByRole('region',{name:'本地引擎分析',exact:true})).toContainText('分析完成');
  await expect(details(page)).toHaveCount(0);
  await review(page).getByRole('button',{name:'查看本手讲解依据'}).click();

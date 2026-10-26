@@ -1,3 +1,4 @@
+import {reveal} from './workspace-ui';
 import {test,expect} from './engine-fixture';
 import type {Page,Route} from '@playwright/test';
 import {evidenceClient,initial} from './evidence-http';
@@ -22,7 +23,7 @@ async function open(page:Page,url:string,origin=2){
  await page.getByLabel('导入后自动整局扫描').uncheck();
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5];B[ba];W[aa];B[ss];W[qq])')});
  for(let n=0;n<origin;n++)await page.getByRole('button',{name:'下一手',exact:true}).click();
- await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+ await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');
  await expect(panel(page)).toContainText('分析完成');
 }
 async function play(page:Page,point:string){
@@ -52,7 +53,7 @@ test('取消的前驱成功不入缓存，同手不同路径不配对，重走�
  await open(page,engineServer.url,0);
  await play(page,'ab');await play(page,'pass');
  await view(page).click();await expect(details(page)).toContainText('试下落子：白 pass');
- await panel(page).getByRole('button',{name:'回到原局',exact:true}).click();
+ await panel(page).getByRole('button',{name:'回到试下起点',exact:true}).click();
  await expect(details(page)).toHaveCount(0);await expect(panel(page)).toContainText('分析完成');
  const held=await holdResponse(page,'**/api/analyze',r=>r.request().postDataJSON().moves.length===1);
  try{
@@ -90,10 +91,10 @@ test.describe('真实依据HTTP交付延迟',()=>{
    }else if(change==='upload'){
     await page.getByLabel('选择 SGF 文件').setInputFiles({name:'new.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Japanese]KM[0.5];B[pp])')});
     await expect(panel(page)).toHaveCount(0);
-    await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+    await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');
    }else{
-    await panel(page).getByRole('button',{name:'关闭本地引擎面板'}).click();await expect(panel(page)).toHaveCount(0);
-    await page.getByRole('button',{name:'打开本地真实引擎分析'}).click();
+    await panel(page).getByRole('button',{name:'返回原谱'}).click();await expect(panel(page)).toHaveCount(0);
+    await page.getByRole('button',{name:'自由试下'}).click();await reveal(page,'试下分析详情');
    }
    await expect(details(page)).toHaveCount(0);await expect(panel(page)).toContainText('分析完成');
    await play(page,'cc');await view(page).click();

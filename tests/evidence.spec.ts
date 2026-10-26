@@ -1,3 +1,4 @@
+import {reveal} from './workspace-ui';
 import {test,expect} from './engine-fixture';
 import type {Page} from '@playwright/test';
 import {evidenceClient,initial} from './evidence-http';
@@ -9,6 +10,7 @@ const review=(page:Page)=>page.getByRole('region',{name:'整局复盘',exact:tru
 const details=(page:Page)=>page.getByRole('region',{name:'本手讲解依据',exact:true});
 async function upload(page:Page) {
  await page.getByLabel('选择 SGF 文件').setInputFiles({name:'synthetic.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5];B[ba];W[aa];B[ab];W[])')});
+ await reveal(page,'分析详情与逐手定位');
 }
 test('按需本地依据：初盘、黑提子己链三气、白pass与回看不分析',async({page,engineServer})=>{
  await page.goto(engineServer.url);await upload(page);
@@ -111,6 +113,7 @@ test.describe('有界候选依据',()=>{
  test('服务仅返回前十合法候选，保留原总数',async({page,request,engineServer})=>{
   await page.goto(engineServer.url);
   await page.getByLabel('选择 SGF 文件').setInputFiles({name:'empty.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Chinese]KM[7.5])')});
+ await reveal(page,'分析详情与逐手定位');
   await expect(review(page)).toContainText('完成：1 / 1');
   await review(page).getByRole('button',{name:'查看本手讲解依据'}).click();
   await expect(details(page)).toContainText('候选总数 12；显示前 10 项');
@@ -198,6 +201,7 @@ test('真实HTTP响应延迟时切手及换谱取消，旧依据不覆盖当前�
   await expect(review(page)).toContainText('正在读取本地依据');
   if(replace){
    await page.getByLabel('选择 SGF 文件').setInputFiles({name:'new.sgf',mimeType:'application/x-go-sgf',buffer:Buffer.from('(;FF[4]RU[Japanese]KM[0.5];B[])')});
+ await reveal(page,'分析详情与逐手定位');
    await expect(review(page)).toContainText('完成：2 / 2');
   }else await review(page).getByRole('button',{name:'定位第 3 手',exact:true}).click();
   await expect(details(page)).toHaveCount(0);

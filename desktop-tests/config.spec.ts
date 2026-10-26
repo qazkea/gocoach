@@ -12,6 +12,7 @@ test('原生菜单选择并默认取消确认后才启用配置，真实桌面�
  await upload(run.page);
  await expect(run.page.getByRole('region',{name:'整局复盘'})).toContainText('完成：5 / 5');
  const review=run.page.getByRole('region',{name:'整局复盘'});
+ await run.page.getByText('分析详情与逐手定位',{exact:true}).click();
  for(let step=0;step<=4;step++) {
   await review.getByRole('button',{name:`定位第 ${step} 手`,exact:true}).click();
   await expect(review).toContainText('实际 visits：101；黑方胜率：60.00%；黑方目差：2.50');
