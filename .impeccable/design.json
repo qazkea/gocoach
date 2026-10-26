@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T10:18:21Z",
+  "title": "Design System: Go Coach",
+  "extensions": {
+    "colorMeta": {
+      "accent": {"role":"primary","displayName":"青绿","tonalRamp":["oklch(from #23756c 15% c h)","oklch(from #23756c 26% c h)","oklch(from #23756c 38% c h)","oklch(from #23756c 49% c h)","oklch(from #23756c 61% c h)","oklch(from #23756c 72% c h)","oklch(from #23756c 84% c h)","oklch(from #23756c 95% c h)"]},
+      "workspace": {"role":"neutral","displayName":"浅灰青工作底","tonalRamp":["oklch(from #e9efed 15% c h)","oklch(from #e9efed 26% c h)","oklch(from #e9efed 38% c h)","oklch(from #e9efed 49% c h)","oklch(from #e9efed 61% c h)","oklch(from #e9efed 72% c h)","oklch(from #e9efed 84% c h)","oklch(from #e9efed 95% c h)"]},
+      "reading": {"role":"neutral","displayName":"白阅读面","tonalRamp":["oklch(15% 0 0)","oklch(26% 0 0)","oklch(38% 0 0)","oklch(49% 0 0)","oklch(61% 0 0)","oklch(72% 0 0)","oklch(84% 0 0)","oklch(95% 0 0)"]},
+      "ink": {"role":"neutral","displayName":"深灰青正文","tonalRamp":["oklch(from #263b3d 15% c h)","oklch(from #263b3d 26% c h)","oklch(from #263b3d 38% c h)","oklch(from #263b3d 49% c h)","oklch(from #263b3d 61% c h)","oklch(from #263b3d 72% c h)","oklch(from #263b3d 84% c h)","oklch(from #263b3d 95% c h)"]},
+      "muted": {"role":"neutral","displayName":"次级灰青","tonalRamp":["oklch(from #526765 15% c h)","oklch(from #526765 26% c h)","oklch(from #526765 38% c h)","oklch(from #526765 49% c h)","oklch(from #526765 61% c h)","oklch(from #526765 72% c h)","oklch(from #526765 84% c h)","oklch(from #526765 95% c h)"]},
+      "line": {"role":"neutral","displayName":"浅灰青边线","tonalRamp":["oklch(from #cbd7d3 15% c h)","oklch(from #cbd7d3 26% c h)","oklch(from #cbd7d3 38% c h)","oklch(from #cbd7d3 49% c h)","oklch(from #cbd7d3 61% c h)","oklch(from #cbd7d3 72% c h)","oklch(from #cbd7d3 84% c h)","oklch(from #cbd7d3 95% c h)"]},
+      "board-surround": {"role":"neutral","displayName":"盘外灰青","tonalRamp":["oklch(from #dfe7e3 15% c h)","oklch(from #dfe7e3 26% c h)","oklch(from #dfe7e3 38% c h)","oklch(from #dfe7e3 49% c h)","oklch(from #dfe7e3 61% c h)","oklch(from #dfe7e3 72% c h)","oklch(from #dfe7e3 84% c h)","oklch(from #dfe7e3 95% c h)"]},
+      "sand-board": {"role":"neutral","displayName":"淡砂棋盘","tonalRamp":["oklch(from #d8c7a6 15% c h)","oklch(from #d8c7a6 26% c h)","oklch(from #d8c7a6 38% c h)","oklch(from #d8c7a6 49% c h)","oklch(from #d8c7a6 61% c h)","oklch(from #d8c7a6 72% c h)","oklch(from #d8c7a6 84% c h)","oklch(from #d8c7a6 95% c h)"]},
+      "quiet-surface": {"role":"neutral","displayName":"淡白辅面","tonalRamp":["oklch(from #fafcfb 15% c h)","oklch(from #fafcfb 26% c h)","oklch(from #fafcfb 38% c h)","oklch(from #fafcfb 49% c h)","oklch(from #fafcfb 61% c h)","oklch(from #fafcfb 72% c h)","oklch(from #fafcfb 84% c h)","oklch(from #fafcfb 95% c h)"]},
+      "hover": {"role":"primary","displayName":"悬停浅青","tonalRamp":["oklch(from #edf5f2 15% c h)","oklch(from #edf5f2 26% c h)","oklch(from #edf5f2 38% c h)","oklch(from #edf5f2 49% c h)","oklch(from #edf5f2 61% c h)","oklch(from #edf5f2 72% c h)","oklch(from #edf5f2 84% c h)","oklch(from #edf5f2 95% c h)"]},
+      "pressed": {"role":"primary","displayName":"按下浅青","tonalRamp":["oklch(from #d5e8df 15% c h)","oklch(from #d5e8df 26% c h)","oklch(from #d5e8df 38% c h)","oklch(from #d5e8df 49% c h)","oklch(from #d5e8df 61% c h)","oklch(from #d5e8df 72% c h)","oklch(from #d5e8df 84% c h)","oklch(from #d5e8df 95% c h)"]},
+      "selected": {"role":"primary","displayName":"选中浅青","tonalRamp":["oklch(from #e2f0eb 15% c h)","oklch(from #e2f0eb 26% c h)","oklch(from #e2f0eb 38% c h)","oklch(from #e2f0eb 49% c h)","oklch(from #e2f0eb 61% c h)","oklch(from #e2f0eb 72% c h)","oklch(from #e2f0eb 84% c h)","oklch(from #e2f0eb 95% c h)"]},
+      "selected-ink": {"role":"primary","displayName":"选中深青","tonalRamp":["oklch(from #195b53 15% c h)","oklch(from #195b53 26% c h)","oklch(from #195b53 38% c h)","oklch(from #195b53 49% c h)","oklch(from #195b53 61% c h)","oklch(from #195b53 72% c h)","oklch(from #195b53 84% c h)","oklch(from #195b53 95% c h)"]}
+    },
+    "typographyMeta": {
+      "body":{"displayName":"工具正文","purpose":"中文复盘文字和控件；不是营销 display。"},
+      "title":{"displayName":"应用标题","purpose":"页头主标题，最窄断点缩小。"},
+      "section-title":{"displayName":"区域标题","purpose":"阅读区及空状态标题；整局复盘有紧凑覆盖。"},
+      "subheading":{"displayName":"阅读小标题","purpose":"当前能力说明标题。"},
+      "label":{"displayName":"辅助标签","purpose":"上下文、状态和辅助说明。"}
+    },
+    "shadows":[
+      {"name":"information-popover","value":"0 8px 24px #263b3d20","purpose":"说明与棋谱信息浮层。"},
+      {"name":"stone","value":"0 1px 2px #263b3d40","purpose":"棋子与棋盘的轻量分离；预览去除。"}
+    ],
+    "motion":[],
+    "breakpoints":[{"name":"workspace-tabs-max","value":"1099px"},{"name":"compact-controls-max","value":"520px"},{"name":"board-coordinate-container-max","value":"450px"}]
+  },
+  "components":[
+    {
+      "name":"轻量操作按钮","kind":"button","refersTo":"button","description":"实际同起点对照/自由试下按钮语言；无实心主 CTA。",
+      "html":"<button class=\"ds-button\">同起点对照</button>",
+      "css":".ds-button{font:14px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;padding:5px 12px;border:1px solid var(--line,#cbd7d3);border-radius:4px;background:#fff;cursor:pointer;white-space:normal}.ds-button:hover:not(:disabled){background:#edf5f2}.ds-button:active:not(:disabled){background:#d5e8df}.ds-button:focus-visible{outline:2px solid var(--accent,#23756c);outline-offset:3px}.ds-button:disabled{color:#64716e;background:#edf0ee;cursor:default}"
+    },
+    {
+      "name":"透明次级入口","kind":"button","refersTo":"button","description":"源自页头预设教学入口；保留透明背景及真实状态优先级。",
+      "html":"<button class=\"ds-entry\" aria-pressed=\"false\">预设教学入口</button>",
+      "css":".ds-entry{font:11.9px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;padding:5px 12px;border:1px solid var(--line,#cbd7d3);border-radius:4px;background:transparent;cursor:pointer}.ds-entry:hover:not(:disabled){background:#edf5f2}.ds-entry:active:not(:disabled){background:#d5e8df}.ds-entry[aria-pressed=true]{border-color:var(--accent,#23756c);background:#e2f0eb;color:#195b53}.ds-entry:focus-visible{outline:2px solid var(--accent,#23756c);outline-offset:3px}.ds-entry:disabled{color:#64716e;background:#edf0ee;cursor:default}"
+    },
+    {
+      "name":"工作区标签导航","kind":"nav","refersTo":"button-selected","description":"窄窗棋盘/教练切换的静态 HTML 示例；预览不模拟业务切换。",
+      "html":"<nav class=\"ds-tabs\" role=\"tablist\" aria-label=\"工作区\"><button role=\"tab\" aria-selected=\"true\">棋盘</button><button role=\"tab\" aria-selected=\"false\">教练</button></nav>",
+      "css":".ds-tabs{display:flex;gap:8px;padding:6px 0}.ds-tabs button{flex:1;font:14px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;padding:5px 12px;border:1px solid var(--line,#cbd7d3);border-radius:4px;background:#fff;cursor:pointer}.ds-tabs button:hover:not(:disabled){background:#edf5f2}.ds-tabs button:active:not(:disabled){background:#d5e8df}.ds-tabs button[aria-selected=true]{border-color:var(--accent,#23756c);background:#e2f0eb;color:#195b53}.ds-tabs button:focus-visible{outline:2px solid var(--accent,#23756c);outline-offset:3px}"
+    },
+    {
+      "name":"复盘草稿输入","kind":"input","refersTo":"draft-input","description":"实际本窗口草稿；无发送按钮、无虚构 hover；focus、caret、placeholder 来自实现。",
+      "html":"<div class=\"ds-composer\"><label for=\"ds-draft\">复盘草稿</label><textarea id=\"ds-draft\" placeholder=\"记下想讨论的问题…\"></textarea><small>仅本次窗口内编辑，不保存、不发送。</small></div>",
+      "css":".ds-composer{font:14px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;border-top:1px solid var(--line,#cbd7d3);padding:16px 20px;background:#fafcfb}.ds-composer label{display:block;margin-bottom:8px}.ds-composer textarea{font:14px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;width:100%;height:76px;min-height:52px;max-height:180px;resize:vertical;border:1px solid #a6b9b3;border-radius:4px;padding:10px;background:#fff;caret-color:var(--accent,#23756c)}.ds-composer textarea::placeholder{color:var(--muted,#526765)}.ds-composer textarea:focus-visible{outline:2px solid var(--accent,#23756c);outline-offset:3px}.ds-composer small{display:block;margin-top:8px;font-size:.85em;color:var(--muted,#526765)}.ds-composer ::selection{background:#cee7de}"
+    },
+    {
+      "name":"原谱上下文标签","kind":"chip","refersTo":"context-tag","description":"静态手数标签；不是按钮，不添加 hover/focus 行为。",
+      "html":"<span class=\"ds-context\">原谱第 1 手</span>",
+      "css":".ds-context{font:11.9px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:var(--accent,#23756c);background:#edf5f2;border:1px solid #c5dcd5;padding:2px 8px}"
+    },
+    {
+      "name":"白色阅读面","kind":"card","refersTo":"reading-panel","description":"实际未启用状态文字，不合成 AI 回复；静态面板无 hover/focus。",
+      "html":"<aside class=\"ds-reading-panel\"><header class=\"ds-reading-heading\"><h2>这一盘的复盘对话</h2></header><div class=\"ds-reading-content\"><h3>在线教练尚未启用</h3><p>这里还没有 AI 回复，也不会自动发送问题。切手、查看推荐和试下都只用于本地复盘。</p></div></aside>",
+      "css":".ds-reading-panel{font:14px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;display:flex;flex-direction:column;min-height:0;background:#fff;border:1px solid var(--line,#cbd7d3)}.ds-reading-heading{padding:18px 22px;border-bottom:1px solid var(--line,#cbd7d3);display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}.ds-reading-heading h2{font-size:16.1px;line-height:1.4;margin:0}.ds-reading-content{flex:1;min-height:0;overflow:auto;padding:30px 24px;scrollbar-color:#91aaa2 #fff}.ds-reading-content h3{font-size:14.7px;line-height:1.4;margin:0}.ds-reading-content p{margin:18px 0;line-height:1.9;max-width:70ch;color:var(--muted,#526765)}.ds-reading-panel ::selection{background:#cee7de}"
+    },
+    {
+      "name":"分析详情折叠面板","kind":"custom","refersTo":"details-panel","description":"原生 details/summary，展开、悬停和键盘焦点均来自源样式。",
+      "html":"<details class=\"ds-details\"><summary>分析详情与逐手定位</summary><p>固定黑方视角（BLACK）：胜率0–100%，正目差表示黑领先。未知区段不连接。</p></details>",
+      "css":".ds-details{font:14px/1.6 'Microsoft YaHei UI','Microsoft YaHei','Segoe UI',sans-serif;color:#263b3d;width:100%;background:#fafcfb;border-top:1px solid var(--line,#cbd7d3);overflow-wrap:anywhere}.ds-details summary{padding:7px 10px;font-weight:600;cursor:pointer}.ds-details summary:hover{background:#edf5f2}.ds-details summary:focus-visible{outline:2px solid var(--accent,#23756c);outline-offset:3px}.ds-details[open]>summary{border-bottom:1px solid var(--line,#cbd7d3)}.ds-details p{margin:6px 0;padding:0 12px}"
+    }
+  ],
+  "narrative": {
+    "northStar":"明亮棋馆",
+    "overview":"浅灰青工作底承接淡砂棋盘与白色阅读面，青绿标明选中、上下文与键盘焦点。中文系统字体、紧凑轻控件和扁平层次服务赛后核对，不以厚木纹、大卡片或营销装饰制造气氛。\n\n这是 Windows Electron 所承载 Web 界面的实际视觉记录，不是原生移动设计，也不是未来聊天功能的提案。正文和标题都是实用工具排版，没有营销 display 字体角色。当前阅读面明确显示在线教练尚未启用，底部为草稿，不把静态消息当成已交付 AI 对话。",
+    "keyCharacteristics":["浅灰青、淡砂、白与青绿组成日光下的工作界面。","小圆角控件、直角面板和细分隔线形成克制层次。","紧凑操作区与宽松阅读区并置，局面上下文始终可辨。"],
+    "rules":[
+      {"name":"The 状态可辨 Rule","body":"选中、悬停与按下不是同一个状态；青绿状态配合文字、ARIA 状态或定位形状，而不单靠颜色传意。","section":"colors"},
+      {"name":"The 工具正文 Rule","body":"标题靠字号与字重建立层级，系统字体用于中文工具的 body/title，不新增 display、装饰等宽或字形图标角色。","section":"typography"},
+      {"name":"The 扁平工作面 Rule","body":"面板用色面和细线组织，只有真实浮层与棋子采用现有柔影，不把浮层阴影复制成大卡片语言。","section":"elevation"}
+    ],
+    "dos":["**Do** 使用青绿状态、细边与文字共同表达当前上下文。","**Do** 保留紧凑操作与宽松阅读的密度差，扩展时复用现有控件状态。","**Do** 从实际 React/SVG/CSS 取材，保持未知、失败与未启用状态可辨。"],
+    "donts":["**Don't** 回到厚木纹、大阴影卡片或营销 display 排版。","**Don't** 把棋盘步骤语义、当前聊天未启用或本工作台双栏写成全局产品禁令。","**Don't** 把审查截图、静态提案或 sidecar 派生色阶作为生产资产或新增色 token。"]
+  }
+}
